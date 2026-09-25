@@ -32,10 +32,14 @@ else
   echo "found MVTec AD at $DATA"
 fi
 
-echo "== 4/4 Optional: fine-tuned LoRA adapter"
-if [ -n "${ADAPTER_REPO:-}" ]; then
-  python -c "from huggingface_hub import snapshot_download; snapshot_download('$ADAPTER_REPO', local_dir='artifacts/models/vlm_lora')"
-fi
+echo "== 4/4 Trained LoRA adapters (from the GitHub release)"
+REL=https://github.com/yuktaablitz/nano-inspect/releases/download/adapters-v1
+mkdir -p artifacts/models
+for f in nanoinspect-tier1-qwen2.5-vl-7b-lora.zip nanoinspect-tier2-qwen3.8-27b-lora.zip; do
+  [ -f "artifacts/models/$f" ] || curl -L -o "artifacts/models/$f" "$REL/$f"
+  (cd artifacts/models && unzip -oq "$f")
+done
+python -c "from huggingface_hub import snapshot_download as s; s('Qwen/Qwen3.8-27B'); s('nvidia/Qwen3.8-27B-NVFP4')"
 
 cat <<'MSG'
 
