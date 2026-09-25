@@ -83,8 +83,8 @@ class LineController:
 
 
 class ActionBuilder:
-    def __init__(self, tier2=None, refs=None, controller=None):
-        self.sop = load_sop(); self.t2 = tier2; self.refs = refs or {}
+    def __init__(self, tier2=None, refs=None, controller=None, writer_model=None):
+        self.sop = load_sop(); self.t2 = tier2; self.refs = refs or {}; self.writer_model = writer_model
         self.controller = controller or LineController(); self._n = 0; self.last_usage = (0, 0)
 
     def _entry(self, cat, defect_type):
@@ -113,7 +113,7 @@ class ActionBuilder:
         if use_llm and self.t2 is not None and pil is not None and cat in self.refs:
             try:
                 r = self.t2.session.post(f"{self.t2.url}/v1/chat/completions", timeout=90, json={
-                    "model": self.t2.model, "temperature": 0, "max_tokens": 220, "chat_template_kwargs": {"enable_thinking": False},
+                    "model": self.writer_model or self.t2.model, "temperature": 0, "max_tokens": 220, "chat_template_kwargs": {"enable_thinking": False},
                     "messages": [{"role": "user", "content": [
                         {"type": "image_url", "image_url": {"url": _url(self.refs[cat])}}, {"type": "image_url", "image_url": {"url": _url(pil)}},
                         {"type": "text", "text": ncr_prompt(cat, station, defect_type, entry, explanation)}]}]}).json()

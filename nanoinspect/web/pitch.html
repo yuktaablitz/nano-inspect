@@ -69,7 +69,7 @@
   <h2>Three tiers. Each is more expensive and sees fewer parts.</h2>
   <div class="tiers">
     <div class="tier" style="background:var(--accent)"><b>Tier 1 · cheap LLM</b>Qwen2.5-VL-7B + LoRA, fine-tuned on the Nano<br>every part · verdict, defect type, location</div>
-    <div class="tier" style="background:var(--t2)"><b>Tier 2 · expensive LLM</b>Qwen3.8-27B NVFP4, verified for DGX Spark<br>parts tier 1 is unsure about + 5% audit · compares with a known-good reference</div>
+    <div class="tier" style="background:var(--t2)"><b>Tier 2 · expensive LLM</b>Qwen3.8-27B + LoRA fine-tuned on the Nano, verified for DGX Spark<br>parts tier 1 is unsure about + 5% audit · compares with a known-good reference</div>
     <div class="tier" style="background:var(--t3)"><b>Tier 3 · cloud human</b>only when review is cheaper than the expected cost of a wrong automatic decision</div>
   </div>
   <p>Both LLMs are served by vLLM on the Nano. Only a small crop of an escalated part leaves the plant. The Nano keeps an outbox, so a network outage delays escalations but never stops the line. Human labels come back as training data.</p>
@@ -176,7 +176,7 @@
       <li>The SOP file is written for the demo products; a plant exports its own from its quality system.</li></ul></div>
     <div class="box"><b>Next</b><ul class="muted">
       <li>Nightly on-device LoRA refresh from reviewer labels.</li>
-      <li>Serve the VLM with vLLM in NVFP4 for more parts per second.</li>
+      <li>Quantize the fine-tuned 27B to NVFP4 to win back its speed (0.46 → ~0.95 parts/s).</li>
       <li>One Nano per line; fleet view across plants.</li></ul></div>
   </div>
   <p style="margin-top:auto"><b>NanoInspect</b> · Every part inspected on the line. Only the hard cases leave the building.</p>
@@ -213,7 +213,7 @@ data().then(({ bench: B, policy: P, sim, meta }) => {
     ["Tier 2 throughput", `${b2.requests_per_s} img/s`, `${b2.concurrency} concurrent clients · p95 ${b2.p95_latency_s} s`],
     ["On-device fine-tune", f.train_seconds ? `${Math.round(f.train_seconds / 60)} min` : "–", f.trainable_pct ? `LoRA on ${f.trainable_pct}% of the 7B model's weights` : ""],
   ].map(([k, v, s]) => `<div class="box"><div class="muted">${k}</div><div class="big">${v}<small>${s}</small></div></div>`).join("");
-  document.getElementById("ftnote").textContent = "Tier 1 serves the base model and the NanoInspect LoRA adapter from one vLLM process; tier 2 uses the vLLM recipe flags for DGX Spark (NVFP4, FP8 KV cache).";
+  document.getElementById("ftnote").textContent = "Tier 1 serves the base model and the NanoInspect LoRA adapter from one vLLM process; tier 2 serves the BF16 27B with its NanoInspect LoRA adapter (the base model writes the operator-facing sentences).";
   const soak = B.S4_combined_soak, en = B.S5_energy, off = B.S6_offline, fr = B.S7_failure_recovery;
   if (soak && en) document.getElementById("stress").innerHTML = [
     [`${soak.minutes}-min soak, both LLMs`, `${soak.max_temp_c} °C`, `${soak.tier1_inferences.toLocaleString()} + ${soak.tier2_inferences.toLocaleString()} inferences · throttling: ${soak.throttle_flag_seen ? "yes" : "none"} · errors: ${soak.errors}`],

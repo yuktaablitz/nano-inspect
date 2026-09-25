@@ -76,28 +76,68 @@ All numbers are measured on the ZGX Nano, on the same 1,096 held-out images (629
 
 See [METRICS.md](METRICS.md) for how and why each metric was chosen. The full numbers are in `artifacts/results/benchmark_summary.json`.
 
-## Run it on a ZGX Nano
-```bash
-git clone <this repo> && cd nanoinspect && ./setup.sh     # venv, packages, model weights (then works offline)
-export NANOINSPECT_DATA=$HOME/Downloads/mvtec_anomaly_detection   # MVTec AD, CC BY-NC-SA 4.0
-./serve_models.sh tier1 && ./serve_models.sh tier2ft   # 7B + LoRA on :8001, fine-tuned 27B on :8002 (or 'both' for the untrained NVFP4 27B)
-./run_cloud.sh &              # cloud review tier :9000 (or: docker build -f cloud/Dockerfile -t nanoinspect-cloud .)
-./run_edge.sh                 # operator app :8080
-jupyter nbconvert --to notebook --execute --inplace nanoinspect.ipynb    # all evaluations, serving benchmark, stress tests
-```
-From a laptop: `ssh -L 8080:localhost:8080 -L 9000:localhost:9000 <user>@<nano-ip>`, then open
-- http://localhost:8080: operator console (overview, inspect with upload or webcam + chat, production line + line controller, cloud escalations, models and serving metrics, escalation policy and cost, evidence)
-- http://localhost:8080/pitch: interactive pitch with live numbers
-- http://localhost:9000: cloud review console
+## How local / hybrid inference works
+NanoInspect is **local-first, hybrid by exception**: every model call happens on the ZGX Nano, and the cloud only stores what a human needs to see.
 
-The LoRA adapter (160 MB) is too large for git; publish it as a release or on Hugging Face and set `ADAPTER_REPO` for `setup.sh`, or retrain with `nanoinspect/vlm.py` (section 3 of the notebook).
+```
+camera / upload ─▶ input check ─▶ TIER 1 (7B + LoRA, vLLM :8001) ──P(defect) < T_LO──▶ ACCEPT          (≈1–2 s, most parts)
+   (unreadable or out-of-distribution frames go straight to a human)   │ unsure, flagged, or 5% audit
+                                                                        ▼
+                                  TIER 2 (27B + LoRA + known-good reference, vLLM :8002)
+                                                                        │ evidence bucket ─▶ P(defect | bucket) (Bayes)
+                                                                        ▼
+                       min(P·$escape, (1−P)·$scrap) ≤ $review ?  ── yes ─▶ ACCEPT or REJECT on the edge
+                                                                        │ no: the models disagree, or tier 2 could not answer
+                                                                        ▼
+               CLOUD: store-and-forward outbox (SQLite) ─▶ human review console :9000 ─▶ label back to the edge
+```
+
+- **Local (edge):** both vision-language models are served by vLLM on the Nano through an OpenAI-compatible API (`nanoinspect/serving.py`). The per-part cascade is in `nanoinspect/cascade.py` (`decide_part`), and the escalation rule is in `nanoinspect/policy.py`. A rejected part gets its SOP-grounded machine JSON (`nanoinspect/actions.py`) on the edge, so the line keeps running with the WAN down.
+- **Tier 1 → tier 2:** tier 2 runs only when tier 1's P(defect) (from verdict-token log-probabilities) is at or above `T_LO`, plus a 5% random audit of accepts. Default is *throughput mode* (`T_LO` 0.5). *Capacity mode* (`T_LO` 0.047) sends as many parts to tier 2 as it can serve; switch in the app under Policy.
+- **Tier 2 → cloud:** a part leaves the building only when the two tiers disagree (tier 1 flags, tier 2 clears it, or the reverse), tier 2's answer is unusable, or the input itself is unreadable, *and* the cost rule says a human review is cheaper than the risk. The verdict comes from the fine-tuned 27B; the operator-facing sentence, NCR text and chat come from the same server's untrained 27B (better prose), used only when it agrees with the verdict.
+- **Hybrid (cloud):** `nanoinspect/escalation.py` writes each escalation to a local SQLite outbox (`artifacts/edge.db`) and forwards only a crop plus the model evidence to `cloud/server.py`, retrying through outages. **The cloud runs no AI.** A reviewer's label returns to the edge as training data.
+- **Offline proof:** the notebook blocks every outbound connection in-process and runs full inspections (3/3 done, 0 connection attempts).
+
+## Run it (on a ZGX Nano, DGX Spark, or any NVIDIA GB10 machine)
+Needs Ubuntu with an NVIDIA driver and CUDA 13, Python 3.12, about 100 GB of disk for weights, and the MVTec AD dataset.
+```bash
+git clone https://github.com/yuktaablitz/nano-inspect.git && cd nano-inspect
+./setup.sh              # 1. venv + packages, model weights, trained LoRA adapters from the GitHub release (then works offline)
+export NANOINSPECT_DATA=$HOME/Downloads/mvtec_anomaly_detection   # 2. MVTec AD (CC BY-NC-SA 4.0), download once
+./start_all.sh          # 3. ONE COMMAND: tier 1 + fine-tuned tier 2 (vLLM), cloud review tier, edge app; waits until ready
+```
+- `T2=nvfp4 ./start_all.sh` serves the untrained NVFP4 27B instead (faster, less memory). `./start_all.sh stop` stops what it started.
+- The first start compiles GB10 kernels (about 10 min); later starts take 2–4 min.
+- Step by step instead: `./serve_models.sh tier1`, `./serve_models.sh tier2ft`, `./run_cloud.sh &`, `./run_edge.sh`. The cloud tier can also run elsewhere: `docker build -f cloud/Dockerfile -t nanoinspect-cloud .`, then set `NANOINSPECT_CLOUD_URL`.
+- Reproduce every number: `jupyter nbconvert --to notebook --execute --inplace nanoinspect.ipynb`, then `02_tier2_finetune_and_capacity.ipynb`. Retrain the adapters with `python -m nanoinspect.vlm` (7B, 28 min) and `python -m nanoinspect.finetune_t2` (27B, 2 h 14 min).
+
+From a laptop: `ssh -L 8080:localhost:8080 -L 9000:localhost:9000 <user>@<nano-ip>`, then open
+- **http://localhost:8080**, the operator console:
+  - inspect a part: upload a photo, take a picture with the phone or webcam, or run the three demo decisions (accept, reject, review);
+  - chat with tier 2 about any part;
+  - production line + line controller, and cloud escalations;
+  - models and live serving metrics, and the escalation policy with editable costs;
+  - API-cost savings, and **Fine-tuning & results** (before/after, loss curves, cost per 1,000 parts).
+- http://localhost:8080/pitch: interactive pitch with live numbers.
+- http://localhost:9000: the cloud review console.
+
+The trained LoRA adapters (tier 1: 149 MB, tier 2: 294 MB zipped) are too large for git. `setup.sh` downloads them from the [`adapters-v1` release](https://github.com/yuktaablitz/nano-inspect/releases/tag/adapters-v1).
+
+## Hackathon Git requirements
+| Requirement | Where |
+|---|---|
+| Public repo with all source code | this repo (weights and the dataset are downloaded by `setup.sh`) |
+| Clear README with setup steps | this file, sections above |
+| How local / hybrid inference is implemented | [How local / hybrid inference works](#how-local--hybrid-inference-works), `docs/architecture.svg` |
+| Script to run on other machines | `setup.sh` (install) + `start_all.sh` (run everything) |
 
 ## Repository
 | Path | What |
 |---|---|
+| `02_tier2_finetune_and_capacity.ipynb` | Keep-or-revert decision for the tier-2 fine-tune; capacity-mode policy |
 | `nanoinspect.ipynb` | Model choice, fine-tune record, quality vs baselines, serving benchmark, escalation policy, machine JSON, stress tests, line simulation |
 | `nanoinspect/serving.py`, `cascade.py` | Clients for the vLLM tiers; the per-part cascade |
-| `nanoinspect/vlm.py` | LoRA fine-tuning of Qwen2.5-VL-7B on the Nano |
+| `nanoinspect/vlm.py`, `finetune_t2.py` | LoRA fine-tuning of Qwen2.5-VL-7B (tier 1) and Qwen3.8-27B (tier 2) on the Nano |
 | `nanoinspect/policy.py` | Cost-based escalation policy |
 | `nanoinspect/delta.py` | Training-free delta map |
 | `nanoinspect/actions.py`, `config/sop.json` | SOP-grounded machine instructions |
@@ -105,11 +145,12 @@ The LoRA adapter (160 MB) is too large for git; publish it as a release or on Hu
 | `nanoinspect/server.py`, `nanoinspect/web/` | Edge web app and pitch |
 | `nanoinspect/stress_llm.py`, `linesim.py`, `telemetry.py` | Soak, energy, robustness, offline, failure tests; line simulator; GPU telemetry |
 | `nanoinspect/vision.py`, `defects.py` | ResNet-18 baseline and its synthetic defects |
-| `serve_models.sh`, `run_edge.sh`, `run_cloud.sh`, `setup.sh` | Scripts |
+| `setup.sh`, `start_all.sh` | Install everything; start everything with one command |
+| `serve_models.sh`, `run_edge.sh`, `run_cloud.sh` | Start one part: model tiers, edge app, cloud tier |
 | `docs/` | Architecture, Q&A for judges, demo and video script, vLLM recipe snapshot |
 
 ## Rules compliance
-All inference, training and fine-tuning run on the ZGX Nano with open-weight models (Qwen2.5-VL-7B-Instruct: Apache 2.0; nvidia/Qwen3.8-27B-NVFP4: Apache 2.0). The cloud tier runs no AI. The offline proof blocks every outbound connection while full inspections run (notebook section 8).
+All inference, training and fine-tuning run on the ZGX Nano with open-weight models (Qwen2.5-VL-7B-Instruct and Qwen3.8-27B / nvidia/Qwen3.8-27B-NVFP4: Apache 2.0). The cloud tier runs no AI. The offline proof blocks every outbound connection while full inspections run (notebook section 8).
 
 ## Limits
 MVTec AD is a public benchmark, not a production line. The default costs and the SOP are illustrative, and the cloud tier runs on our own machine in the demo.

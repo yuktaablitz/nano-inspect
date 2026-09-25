@@ -26,6 +26,7 @@ const PAGES = {
   how: ["How it works", "A cheap LLM, an expensive LLM, then a human, and why each exists.", "How It Works", "hazelnut/test/crack/003.png"],
   policy: ["Escalation policy & cost", "An explicit, measurable rule for when a person should look.", "How It Works", "metal_nut/test/good/002.png"],
   sop: ["SOP & machine instructions", "ISO 9001 §8.7 procedures turned into instructions the line can execute.", "How It Works", "transistor/test/good/002.png"],
+  results: ["Fine-tuning & results", "What training on the Nano changed, measured against every baseline.", "Evidence", "hazelnut/test/crack/003.png"],
   models: ["Models & serving", "Quality against baselines and serving performance, measured on the Nano.", "Evidence", "screw/test/thread_side/008.png"],
   savings: ["Cloud vs edge savings", "Tokens, API cost, energy and time: what running locally saves.", "Evidence", "pill/test/good/002.png"],
   evidence: ["Benchmarks", "Soak test, robustness, escalation policy and line simulation.", "Evidence", "tile/test/good/002.png"],
@@ -57,6 +58,7 @@ function show(v) {
   if (v === "how") how();
   if (v === "sop") sop();
   if (v === "savings") savings();
+  if (v === "results") results();
   tick();
 }
 
@@ -100,7 +102,7 @@ function overview(o) {
   const t2 = (t["2"] || 0) + (t["3"] || 0), t3 = t["3"] || 0, w = x => total ? Math.max(0.4, 100 * x / total) : 0;
   $("#funnel").innerHTML = [
     ["Tier 1 · Qwen2.5-VL-7B + LoRA", "fine-tuned on this Nano · every part", total, "var(--t1)"],
-    ["Tier 2 · Qwen3.8-27B NVFP4", "compares with a known-good reference · uncertain + audit", t2, "var(--t2)"],
+    ["Tier 2 · Qwen3.8-27B + LoRA", "compares with a known-good reference · uncertain + audit", t2, "var(--t2)"],
     ["Tier 3 · cloud human", "only when review is cheaper than the risk", t3, "var(--t3)"],
   ].map(([n, s, c, col]) => `<div class="tier"><div class="name"><b>${n}</b><span>${s}</span></div>
       <div class="barwrap"><div class="bar" style="width:${w(c)}%;background:${col}"></div></div>
@@ -206,7 +208,7 @@ function tierLine(r, n) {
   if (!r) return `<span class="muted">${n === 2 ? "not needed (tier 1 was confident; accepted parts are re-checked in a random audit)" : "–"}</span>`;
   const f = r.verdict === "defective" && r.defect_type && r.defect_type !== "none" ? ` · ${esc(r.defect_type.replaceAll("_", " "))} at the ${esc(r.location)}` : "";
   return `<b>${esc(r.verdict ?? "unusable")}</b>${f} <span class="muted small">P(defect) ${pct(r.p_defective)} · ${sec(r.latency_s)}</span>` +
-    (r.explanation ? `<div class="small">“${esc(r.explanation)}”</div>` : "");
+    (r.explanation ? `<div class="small">“${esc(r.explanation)}”${r.explanation_by ? ` <span class="muted">(verdict: fine-tuned 27B · sentence: untrained 27B)</span>` : ""}</div>` : "");
 }
 function renderResult(r) {
   lastInspection = r.inspection_id; chatHist = []; $("#chat-log").innerHTML = "";
@@ -343,7 +345,7 @@ async function loadModels(live) {
     q.map(r => `<tr${r.config.startsWith("Tier") ? ' style="font-weight:600"' : ""}><td>${esc(r.config)}</td><td>${r.roc_auc?.toFixed(3) ?? "–"}</td><td>${pct(r.accuracy)}</td><td>${pct(r.recall)}</td>
       <td>${pct(r.false_positive_rate)}</td><td>${pct(r.defect_type_acc)}</td><td>${pct(r.location_acc)}</td><td>${pct(r.valid_json_rate)}</td>
       <td>${r.throughput_img_per_s ? r.throughput_img_per_s.toFixed(1) + " img/s" : "–"}</td></tr>`).join("") : `<tr><td>Run the notebook to produce model-quality results.</td></tr>`;
-  const b = [...(m.tier1.benchmark || []).map(r => ({ tier: "Tier 1 · 7B + LoRA", ...r })), ...(m.tier2.benchmark || []).map(r => ({ tier: "Tier 2 · 27B NVFP4", ...r }))];
+  const b = [...(m.tier1.benchmark || []).map(r => ({ tier: "Tier 1 · 7B + LoRA", ...r })), ...(m.tier2.benchmark || []).map(r => ({ tier: "Tier 2 · 27B + LoRA", ...r }))];
   $("#servebench").innerHTML = b.length ? `<tr><th>Model</th><th>Concurrent clients</th><th>Requests/s</th><th>Output tokens/s</th><th>p50 latency</th><th>p95 latency</th></tr>` +
     b.map(r => `<tr><td>${r.tier}</td><td>${r.concurrency}</td><td>${r.requests_per_s}</td><td>${r.output_tokens_per_s}</td><td>${sec(r.p50_latency_s)}</td><td>${sec(r.p95_latency_s)}</td></tr>`).join("") :
     `<tr><td>Run the notebook's serving benchmark to fill this table.</td></tr>`;
@@ -386,6 +388,8 @@ function renderPolicy(p, sim) {
 
 // ---------------------------------------------------------------- evidence
 const FIG = {
+  "finetune_loss_both.png": "LoRA fine-tuning of both models on the Nano (training loss)",
+  "model_quality_per_category.png": "Accuracy per product for every model",
   "model_quality.png": "Model quality on held-out images: tiers vs baselines",
   "serving_benchmark.png": "Serving throughput and latency on the Nano (vLLM)",
   "escalation_policy.png": "Escalation policy: cost per 1,000 parts",
@@ -431,7 +435,7 @@ async function home() {
       text: "A 7-billion-parameter vision-language model, taught on this device with LoRA (28 minutes, 0.5% of its weights, real defect photos only). It checks every part and answers with a verdict, the defect type and where it is, plus a probability read from its own token log-probabilities.",
       facts: [[t1.roc_auc?.toFixed(3), "ROC-AUC"], [pct(t1.recall, 0), `defects caught (zero-shot: ${pct(z7.recall, 0)})`], [sv1 ? sv1.requests_per_s : "–", "parts / s served"]], href: "#models" },
     { tag: "Tier 2 · doubtful parts", img: "hazelnut/test/crack/003.png", title: "Qwen3.8-27B with a known-good reference",
-      text: "Verified for DGX Spark in the vLLM recipes, served in NVFP4. It sees the part next to a known-good part, confirms or clears tier 1's flag, explains the defect in a sentence and writes the nonconformance report. Operators can chat with it about any part.",
+      text: "Verified for DGX Spark in the vLLM recipes and fine-tuned on the Nano (LoRA on 79.7M of 27.4B parameters, 2 h 14 min), served as BF16 + adapter. It sees the part next to a known-good part, confirms or clears tier 1's flag, explains the defect in a sentence and writes the nonconformance report. Operators can chat with it about any part.",
       facts: [[t2.roc_auc?.toFixed(3), "ROC-AUC"], [pct(t2.accuracy, 0), "accuracy"], [sv2 ? sv2.requests_per_s : "–", "parts / s served"]], href: "#how" },
     { tag: "Tier 3 · only when it pays", img: "bottle/test/contamination/009.png", title: "A person in the cloud, by a cost rule",
       text: "When the cheaper automatic decision would still cost more than a human review, the part goes to a reviewer. Only a small crop leaves the plant, through a store-and-forward outbox that survives outages. The reviewer's label returns to the Nano as training data.",
@@ -549,9 +553,11 @@ document.querySelectorAll(".mi").forEach(m => {
   m.addEventListener("mouseleave", () => { t = setTimeout(() => m.classList.remove("open"), 180); });
 });
 document.addEventListener("click", e => {
-  const el = e.target.closest("[data-demo],#demo-open,[data-run],[data-mini],[data-open],[data-reinspect],[data-sr],[data-sop],.gallery img,.refs img,.mega a");
+  const el = e.target.closest("[data-src],[data-demo],#demo-open,[data-run],[data-mini],[data-open],[data-reinspect],[data-sr],[data-sop],.gallery img,.refs img,img.figure,.mega a");
   if (!el) { if (!e.target.closest(".search")) $("#search-res").hidden = true; return; }
   if (el.matches(".mega a")) { el.closest(".mi").classList.remove("open"); return; }
+  if (el.dataset.src) { e.preventDefault(); if (view !== "inspect") go("inspect");
+    if (el.dataset.src === "upload") file.click(); else $("#cam-on").click(); return; }
   if (el.matches("[data-demo],#demo-open")) { e.preventDefault(); openDemo(); }
   else if (el.dataset.run) runScenario(el.dataset.run, "modal");
   else if (el.dataset.mini) { if (!SCEN.length) loadScenarios().then(() => runScenario(el.dataset.mini, "page")); else runScenario(el.dataset.mini, "page"); }
@@ -560,7 +566,7 @@ document.addEventListener("click", e => {
     post("/api/inspect_path", { category: el.dataset.cat, path: el.dataset.reinspect }).then(renderResult).catch(err => $("#result").innerHTML = `<div class="placeholder">${esc(err.message)}</div>`); }
   else if (el.dataset.sr) { e.preventDefault(); pickSearch(+el.dataset.sr); }
   else if (el.dataset.sop) sop(el.dataset.sop);
-  else if (el.matches(".gallery img,.refs img")) { const d = document.createElement("div"); d.className = "lightbox"; d.innerHTML = `<img src="${el.src}">`; d.onclick = () => d.remove(); document.body.appendChild(d); }
+  else if (el.matches(".gallery img,.refs img,img.figure")) { const d = document.createElement("div"); d.className = "lightbox"; d.innerHTML = `<img src="${el.src}">`; d.onclick = () => d.remove(); document.body.appendChild(d); }
 });
 $("#demo-close").onclick = () => $("#demo").hidden = true;
 $("#burger").onclick = () => $(".nav").classList.toggle("open");
@@ -571,6 +577,52 @@ document.querySelectorAll(".mi > a").forEach(a => a.addEventListener("click", e 
 $("#demo").addEventListener("click", e => { if (e.target.id === "demo") $("#demo").hidden = true; });
 document.addEventListener("keydown", e => { if (e.key === "Escape") { $("#demo").hidden = true; document.querySelector(".lightbox")?.remove(); } });
 $("#drop").addEventListener("click", e => { if (!e.target.closest("a")) file.click(); });
+
+// ---------------------------------------------------------------- fine-tuning & results page
+async function results() {
+  const R = await api("/api/results").catch(() => null); if (!R) return;
+  const idx = a => Object.fromEntries((a || []).map(r => [r.config, r]));
+  const B = idx(R.before), A = idx(R.after);
+  const t2b = B["Tier 2: Qwen3.8-27B with good reference"] || {}, t2a = A["Tier 2: Qwen3.8-27B with good reference"] || {};
+  const t1a = A["Tier 1: Qwen2.5-VL-7B + LoRA (fine-tuned on Nano)"] || {}, z7 = A["Baseline: Qwen2.5-VL-7B zero-shot"] || {};
+  const cap = (R.capacity || {})["NanoInspect cascade"] || {}, thr = (R.throughput || {})["NanoInspect cascade"] || {}, hum = (R.throughput || {})["Human inspects every part"] || {};
+  $("#res-kpis").innerHTML = [
+    ["27B overall score (ROC-AUC)", t2a.roc_auc?.toFixed(3), `before fine-tuning: ${t2b.roc_auc?.toFixed(3)}`],
+    ["27B defects caught", pct(t2a.recall, 0), `before: ${pct(t2b.recall, 0)}`],
+    ["27B good parts flagged", pct(t2a.false_positive_rate, 0), `before: ${pct(t2b.false_positive_rate, 0)}`],
+    ["7B defects caught", pct(t1a.recall, 0), `untrained: ${pct(z7.recall, 0)}`],
+    ["Cost per 1,000 parts", cap.cost_per_1000_usd ? "$" + cap.cost_per_1000_usd.toFixed(0) : "–", `capacity mode · default $${thr.cost_per_1000_usd?.toFixed(0)} · human-only $${hum.cost_per_1000_usd?.toFixed(0)}`],
+  ].map(([k, v, s2]) => `<div class="kpi"><div class="k">${k}</div><div class="v">${v ?? "–"}</div><div class="s">${s2}</div></div>`).join("");
+  const T = R.training || {};
+  const trow = (k, lab) => T[k] ? `<tr><td>${lab}</td><td>${(T[k].trainable_params / 1e6).toFixed(1)}M of ${(T[k].total_params / 1e9).toFixed(1)}B (${T[k].trainable_pct}%)</td><td>${Math.round(T[k].train_seconds / 60)} min</td><td>${T[k].optimizer_steps}</td><td>${T[k].peak_gpu_mem_gb} GB</td></tr>` : "";
+  $("#res-train").innerHTML = `<table><tr><th>Model</th><th>Trained parameters</th><th>Time on the Nano</th><th>Steps</th><th>Peak memory</th></tr>
+      ${trow("tier1", "Tier 1 · Qwen2.5-VL-7B")}${trow("tier2", "Tier 2 · Qwen3.8-27B")}</table>
+    <p class="muted small">LoRA adapters (rank 16) on the language model; the image encoder and original weights stay frozen. Training data: 1,258 real photos (half the real defects + as many good parts), none from the test set.
+    ${R.decision ? `<br><b>Keep-or-revert rule, fixed before training:</b> keep the 27B fine-tune only if the cascade beats $${R.decision.baseline_cost.toFixed(2)} per 1,000 parts. Result: $${R.decision.fine_tuned_cost.toFixed(2)} → <b>${R.decision.keep ? "kept" : "reverted"}</b>.` : ""}</p>`;
+  const d = (a, b, lowGood) => a == null || b == null ? "" : (() => { const x = a - b; const good = lowGood ? x < 0 : x > 0; return Math.abs(x) < 0.0005 ? "" : ` <span class="${good ? "delta-up" : "delta-down"}">${x > 0 ? "+" : ""}${(x * 100).toFixed(1)}</span>`; })();
+  $("#res-models").innerHTML = `<tr><th>Model</th><th>ROC-AUC</th><th>Defects caught</th><th>Good parts flagged</th><th>Right defect type</th><th>Right location</th></tr>` +
+    (R.after || []).map(r => { const b = B[r.config] || {}; const ours = r.config.startsWith("Tier");
+      return `<tr${ours ? ' style="font-weight:600"' : ""}><td>${esc(r.config)}</td><td>${r.roc_auc?.toFixed(3) ?? "–"}${d(r.roc_auc, b.roc_auc)}</td>
+        <td>${pct(r.recall)}${d(r.recall, b.recall)}</td><td>${pct(r.false_positive_rate)}${d(r.false_positive_rate, b.false_positive_rate, true)}</td>
+        <td>${pct(r.defect_type_acc)}${d(r.defect_type_acc, b.defect_type_acc)}</td><td>${pct(r.location_acc)}${d(r.location_acc, b.location_acc)}</td></tr>`; }).join("");
+  const F = R.flips || {};
+  $("#res-flips").innerHTML = `Coloured numbers are the change in percentage points since before the 27B fine-tune (only tier 2 changed; the rest is run-to-run noise). ` +
+    (F.tier1 ? `Fine-tuning the 7B turned <b>${F.tier1.fixed}</b> wrong answers right and ${F.tier1.broken} right answers wrong (vs untrained). ` : "") +
+    (F.tier2 ? `Fine-tuning the 27B: <b>${F.tier2.fixed}</b> fixed, ${F.tier2.broken} broken, out of ${F.tier2.total}.` : "");
+  const rows = Object.entries({ ...(R.capacity ? { "NanoInspect, capacity mode": R.capacity["NanoInspect cascade"] } : {}), ...(R.throughput || {}) })
+    .map(([k, v]) => [k === "NanoInspect cascade" ? "NanoInspect, default (throughput) mode" : k, v]).sort((a, b) => a[1].cost_per_1000_usd - b[1].cost_per_1000_usd);
+  const max = Math.max(...rows.map(r => r[1].cost_per_1000_usd));
+  $("#res-cost").innerHTML = `<div class="bars">` + rows.map(([k, v]) => `<div class="b ${k.startsWith("NanoInspect") ? "me" : ""}"><span>${esc(k)}</span>
+      <div class="track"><div class="fill" style="width:${Math.max(0.5, 100 * v.cost_per_1000_usd / max)}%"></div></div><b>$${v.cost_per_1000_usd.toFixed(0)}</b></div>`).join("") + `</div>
+    <div class="table-wrap"><table><tr><th>Strategy</th><th>Escaped defects</th><th>Good parts scrapped</th><th>Human reviews</th><th>Tier-2 calls</th></tr>` +
+    rows.map(([k, v]) => `<tr><td>${esc(k)}</td><td>${v.escapes_per_1000.toFixed(1)}</td><td>${v.false_rejects_per_1000.toFixed(1)}</td><td>${v.human_reviews_per_1000.toFixed(0)}</td><td>${v.vlm_calls_per_1000.toFixed(0)}</td></tr>`).join("") + `</table></div>`;
+  const sb = (R.serving_before || []).reduce((m, r) => !m || r.requests_per_s > m.requests_per_s ? r : m, null), sa = (R.serving_after || []).reduce((m, r) => !m || r.requests_per_s > m.requests_per_s ? r : m, null);
+  $("#res-tradeoff").innerHTML = `<ul>
+    <li><b>Better decisions:</b> the fine-tuned 27B catches more defects with fewer false alarms and names the defect and location far more often.</li>
+    <li><b>Slower and hungrier:</b> the adapter needs the full-precision (BF16) weights, so tier 2 serves ${sa ? sa.requests_per_s : "–"} parts/s instead of ${sb ? sb.requests_per_s : "–"} (NVFP4) and uses ${R.energy_after ? R.energy_after.joules_per_item.toFixed(0) : "–"} J instead of ${R.energy_before ? R.energy_before.joules_per_item.toFixed(0) : "–"} J per check. That is why the cascade still matters: the small model handles most parts.</li>
+    <li><b>Plainer sentences:</b> trained on template answers, the fine-tuned 27B writes template-like explanations, so the untrained 27B on the same server writes the operator's sentence, the defect report and the chat replies. The decision always comes from the fine-tuned model.</li>
+    <li><b>Capacity mode</b> sends up to about half of all parts to tier 2 (threshold ${R.capacity_t_lo ? R.capacity_t_lo.toFixed(3) : "–"}, set from validation parts and measured capacity). It fits lines up to about 50 parts/min; beyond that, run the default mode or add a second tier-2 server.</li></ul>`;
+}
 
 // ---------------------------------------------------------------- boot
 (async () => {

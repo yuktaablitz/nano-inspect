@@ -46,7 +46,6 @@ cat <<'MSG'
 Setup done. Next:
   . .venv/bin/activate
   jupyter nbconvert --to notebook --execute --inplace nanoinspect.ipynb    # train + evaluate + stress test (~90 min)
-  jupyter nbconvert --to notebook --execute --inplace 02_escalation_policy.ipynb
-  ./run_cloud.sh &     # cloud review tier on :9000 (or run it on another machine)
-  ./run_edge.sh        # operator app on :8080
+  jupyter nbconvert --to notebook --execute --inplace 02_tier2_finetune_and_capacity.ipynb
+  ./start_all.sh       # both model tiers + cloud review tier (:9000) + operator app (:8080), in one command
 MSG

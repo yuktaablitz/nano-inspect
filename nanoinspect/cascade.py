@@ -94,7 +94,7 @@ class InputCheck:
         return {"out_of_distribution": z > self.limit, "z": round(z, 1), "z_limit": self.limit}
 
 
-def decide_part(pil, cat, *, t1, t2, refs, check, policy_fn, t_lo, force_t2=False, audit=False):
+def decide_part(pil, cat, *, t1, t2, refs, check, policy_fn, t_lo, force_t2=False, audit=False, explainer=None):
     """Run one part through the cascade. Returns decision, tier reached, evidence bucket, reason, and both tiers' answers.
     Never raises: model failures fall back to escalation."""
     t0 = time.perf_counter()
@@ -113,7 +113,17 @@ def decide_part(pil, cat, *, t1, t2, refs, check, policy_fn, t_lo, force_t2=Fals
     if p1 < t_lo and not force_t2 and not audit:
         return {"decision": "accept", "tier": 1, "bucket": "fast_accept", "input_check": chk, "r1": r1, "r2": None,
                 "reason": f"tier 1 is confident the part is good (P(defect) {p1:.1%})", "total_s": time.perf_counter() - t0}
-    r2 = t2.safe_ask([refs[cat], pil], cat)
+    if explainer is not None:
+        # The fine-tuned tier 2 decides; the untrained base model (same server) writes the operator's sentence.
+        # Both requests run at the same time, so this adds almost no waiting.
+        from concurrent.futures import ThreadPoolExecutor
+        with ThreadPoolExecutor(2) as ex:
+            f2 = ex.submit(t2.safe_ask, [refs[cat], pil], cat); fe = ex.submit(t2.safe_ask, [refs[cat], pil], cat, explainer)
+            r2, re_ = f2.result(), fe.result()
+        if r2.get("valid") and re_.get("explanation") and re_.get("verdict") == r2.get("verdict"):   # never contradict the decision
+            r2 = {**r2, "explanation_fine_tuned": r2.get("explanation"), "explanation": re_["explanation"], "explanation_by": explainer}
+    else:
+        r2 = t2.safe_ask([refs[cat], pil], cat)
     action, reason, bucket = policy_fn(p1, t_lo, r2["verdict"] if r2.get("valid") else None)
     if audit and p1 < t_lo:
         reason = "random audit of a tier-1 accept: " + reason

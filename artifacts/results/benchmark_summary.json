@@ -458,7 +458,7 @@
  "tier2_finetune_decision": {
   "rule": "keep if cascade cost per 1,000 parts < baseline",
   "baseline_cost": 415.2366,
-  "fine_tuned_cost": 230.0742,
+  "fine_tuned_cost": 411.9104147672631,
   "keep": true
  },
  "t_lo_capacity_aware": {

@@ -54,6 +54,7 @@
           <a class="mega-feature" href="#models"><img data-thumb="screw/test/thread_side/008.png" alt=""><b>Measured on the ZGX Nano</b>
             <span>Every model against baselines on 1,096 held-out images, served by vLLM on the device.</span></a>
           <div class="mega-links">
+            <a href="#results"><b>Fine-tuning &amp; results</b><span>What training on the Nano changed: before vs after, baselines, cost per 1,000 parts.</span></a>
             <a href="#models"><b>Models &amp; serving</b><span>Quality vs baselines, throughput, latency and live vLLM metrics.</span></a>
             <a href="#savings"><b>Cloud vs edge savings</b><span>Tokens processed locally, API cost avoided, energy and time.</span></a>
             <a href="#evidence"><b>Benchmarks</b><span>Soak test, robustness, escalation policy and line simulation charts.</span></a>
@@ -83,6 +84,14 @@
         <div class="row"><a class="pill outline" href="#how">Find out more</a><a class="pill" href="#inspect">Inspect a part</a><button class="pill ghost" data-demo>Watch 3 decisions</button></div>
       </div>
     </div>
+    <section class="try-band"><div class="wrap try-in">
+      <div><div class="kicker">Try it now</div><h2>Inspect your own part.</h2>
+        <p class="lead">Upload a photo or take one with your camera. Two local AI models check it on the Nano in seconds; the image never leaves this device.</p></div>
+      <div class="src-tiles">
+        <button class="src-tile" data-src="upload"><span class="ico">⬆</span><b>Upload a photo</b><span>PNG or JPG from your computer</span></button>
+        <button class="src-tile" data-src="camera"><span class="ico">◉</span><b>Take a picture</b><span>Use this device's camera</span></button>
+        <button class="src-tile" data-demo><span class="ico">▶</span><b>Watch 3 decisions</b><span>Accept, reject, human review</span></button>
+      </div></div></section>
     <section class="band dark"><div class="wrap">
       <div class="kicker">How it works</div>
       <h2>Visual inspection. No cloud required.</h2>
@@ -122,14 +131,18 @@
         <h3>1 · Choose the product</h3>
         <select id="cat"></select>
         <h3>2 · Provide an image</h3>
-        <div class="drop" id="drop"><input type="file" id="file" accept="image/*" hidden>
+        <div class="src-tiles light-tiles">
+          <button class="src-tile" data-src="upload"><span class="ico">⬆</span><b>Upload a photo</b><span>or drag it onto the box below</span></button>
+          <button class="src-tile" data-src="camera"><span class="ico">◉</span><b>Take a picture</b><span>with this device's camera</span></button>
+        </div>
+        <div class="drop" id="drop"><input type="file" id="file" accept="image/*" capture="environment" hidden>
           <b>Drop a photo here</b> or <a id="browse">browse</a><div class="muted small">PNG / JPG — processed on this device</div></div>
         <div id="pending" class="pending" hidden><img id="pending-img" alt="">
           <div><div class="small"><b>Image added:</b> <span id="pending-name"></span></div>
             <div class="small muted" id="pending-meta"></div>
             <div class="row"><button class="primary" id="submit">Submit for inspection</button><button id="clear">Remove</button></div></div></div>
         <div class="row">
-          <button id="cam-on">Use camera</button>
+          <button id="cam-on" hidden>Use camera</button>
           <button id="sample-good">Random good part</button>
           <button id="sample-bad">Random defective part</button>
         </div>
@@ -215,6 +228,23 @@
         <div class="muted small" id="rates-note"></div></details></div>
   </div></section>
 
+  <!-- RESULTS -->
+  <section class="view page" id="v-results" hidden><div class="wrap">
+    <div class="kpis" id="res-kpis"></div>
+    <div class="card"><h3>Fine-tuning on the Nano</h3><div class="grid2">
+      <div><img class="figure" src="/results/finetune_loss_both.png" alt="training loss"><p class="muted small">Training loss for both LoRA fine-tunes, run on the ZGX Nano. Only the small adapters are trained; the original weights stay frozen.</p></div>
+      <div id="res-train"></div></div></div>
+    <div class="card"><h3>Each model before vs after, on 1,096 held-out images</h3><div class="table-wrap"><table id="res-models"></table></div>
+      <p class="muted small" id="res-flips"></p></div>
+    <div class="card"><h3>Whole strategies: cost per 1,000 parts</h3><div id="res-cost"></div>
+      <p class="muted small">Held-out half; $50 per escaped defect, $2 per scrapped good part, $0.50 per human review, 5% defect rate. Throughput mode is the default; capacity mode is a switch on the <a href="#policy">Policy page</a>.</p></div>
+    <div class="grid2">
+      <div class="card"><h3>What the models say, before and after</h3><img class="figure" src="/results/llm_examples.png" alt="examples"></div>
+      <div class="card"><h3>Detection and explanation quality</h3><img class="figure" src="/results/model_quality.png" alt="quality"><img class="figure" src="/results/escalation_policy.png" alt="policy"></div>
+    </div>
+    <div class="card"><h3>The trade-off, honestly</h3><div id="res-tradeoff"></div></div>
+  </div></section>
+
   <!-- MODELS -->
   <section class="view page" id="v-models" hidden><div class="wrap">
     <div class="grid2" id="model-cards"></div>
@@ -254,7 +284,7 @@
 <footer class="foot"><div class="wrap foot-in">
   <div><a class="logo" href="#home"><span class="mark">N<i></i></span>NanoInspect</a><p class="muted small" id="site">—</p></div>
   <div class="foot-links"><a href="#inspect">Inspect a part</a><a href="#line">Production line</a><a href="#how">How it works</a><a href="#policy">Escalation policy</a>
-    <a href="#sop">SOP</a><a href="#models">Models</a><a href="#savings">Savings</a><a href="#evidence">Benchmarks</a></div>
+    <a href="#sop">SOP</a><a href="#results">Fine-tuning &amp; results</a><a href="#models">Models</a><a href="#savings">Savings</a><a href="#evidence">Benchmarks</a></div>
   <div class="muted small">HP Edge AI SJSUHack 2026 · All inference, training and fine-tuning on one HP ZGX Nano (NVIDIA GB10).</div>
 </div></footer>
 

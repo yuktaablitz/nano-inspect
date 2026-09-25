@@ -31,7 +31,7 @@ from . import data, policy, serving, telemetry
 from .actions import ActionBuilder
 from .delta import DeltaMap
 from .cascade import InputCheck, decide_part, eval_items
-from .config import CATEGORIES, DATA_ROOT, LOCATIONS, RESULTS_DIR
+from .config import CATEGORIES, DATA_ROOT, LOCATIONS, MODELS_DIR, RESULTS_DIR
 from .escalation import CloudSync, EdgeStore
 from .linesim import DECISION_OF, LineSimulator
 
@@ -68,8 +68,11 @@ class State:
         self.t1, self.t2 = serving.tier1(), serving.tier2()
         self.refs = {c: serving.reference_image(self.splits, c) for c in CATEGORIES}
         self.check = InputCheck(self.splits)
+        # When tier 2 is the fine-tuned adapter, the untrained base model on the same server writes explanations,
+        # reports and chat answers (fine-tuning made its verdicts better but its sentences template-like).
+        self.writer = serving.TIER2_BASE if self.t2.model == serving.T2_ADAPTER else None
         self.delta = DeltaMap(self.splits)                 # explicit good-vs-part delta (heatmap + score)
-        self.act = ActionBuilder(self.t2, self.refs)   # SOP-grounded machine JSON for the line controller
+        self.act = ActionBuilder(self.t2, self.refs, writer_model=self.writer)   # SOP-grounded machine JSON for the line controller
         self.defect_types = {c: data.defect_types(c) for c in CATEGORIES}
         self.mode = "throughput"
         saved = policy.load(self.mode) or {}
@@ -173,7 +176,7 @@ class State:
     def cascade(self, pil, cat, source, force_t2=False, image_ref="upload", true_label=None, image_bytes=None):
         audit = random.random() < self.audit_rate
         res = decide_part(pil, cat, t1=self.t1, t2=self.t2, refs=self.refs, check=self.check, policy_fn=self.policy_fn,
-                          t_lo=self.t_lo, force_t2=force_t2, audit=audit)
+                          t_lo=self.t_lo, force_t2=force_t2, audit=audit, explainer=self.writer)
         decision, tier, bucket, reason, r1, r2 = (res[k] for k in ("decision", "tier", "bucket", "reason", "r1", "r2"))
         audit = audit and tier > 1 and (r1 or {}).get("p_defective", 1) < self.t_lo
         pil = pil.convert("RGB"); total = res["total_s"]; chk = res["input_check"]
@@ -203,7 +206,7 @@ class State:
                 "machine_json": machine, "machine_json_source": machine_src,
                 "audit": audit, "category": cat, "t_lo": self.t_lo, "total_s": round(total, 3), "input_check": chk,
                 "tier1": pick(r1, ("verdict", "defect_type", "location", "p_defective", "latency_s", "valid")),
-                "tier2": pick(r2, ("verdict", "defect_type", "location", "explanation", "p_defective", "latency_s", "valid")),
+                "tier2": pick(r2, ("verdict", "defect_type", "location", "explanation", "explanation_by", "p_defective", "latency_s", "valid")),
                 "recommended_action": SOP[decision].format(cat=cat.replace("_", " ")),
                 "image_b64": _b64(pil), "marked_b64": _b64(marked), "reference_b64": _b64(self.refs[cat], 192)}
 
@@ -362,7 +365,7 @@ def chat(r: ChatReq):
         msgs.append({"role": "user", "content": r.question})
     t0 = time.perf_counter()
     resp = S.t2.session.post(f"{S.t2.url}/v1/chat/completions", timeout=120, json={
-        "model": S.t2.model, "messages": msgs, "temperature": 0.2, "max_tokens": 220,
+        "model": S.writer or S.t2.model, "messages": msgs, "temperature": 0.2, "max_tokens": 220,
         "chat_template_kwargs": {"enable_thinking": False}})
     resp.raise_for_status(); j = resp.json(); u = j.get("usage", {})
     S.extra["tokens_in"] += u.get("prompt_tokens", 0); S.extra["tokens_out"] += u.get("completion_tokens", 0)
@@ -444,6 +447,36 @@ class RatesReq(BaseModel):
 @app.post("/api/savings/rates")
 def set_rates(r: RatesReq):
     S.rates.update(r.model_dump()); return savings()
+
+
+@app.get("/api/results")
+def results():
+    """Everything the Results page shows: before/after fine-tuning, strategy costs in both modes, answer flips."""
+    base_p = RESULTS_DIR.parent / "results_baseline" / "benchmark_summary.json"
+    B = json.loads(base_p.read_text()) if base_p.exists() else {}
+    N = S.bench
+    def flips(before_csv, after_csv):
+        try:
+            b = pd.read_csv(before_csv).set_index("path"); a = pd.read_csv(after_csv).set_index("path")
+            j = b[["label", "verdict"]].join(a[["verdict"]], rsuffix="_a")
+            ob = (j.verdict == "defective") == (j.label == 1); oa = (j.verdict_a == "defective") == (j.label == 1)
+            return {"fixed": int((~ob & oa).sum()), "broken": int((ob & ~oa).sum()), "both_right": int((ob & oa).sum()),
+                    "both_wrong": int((~ob & ~oa).sum()), "total": int(len(j))}
+        except Exception:
+            return None
+    stats = {}
+    for k, d in (("tier1", "vlm_lora"), ("tier2", "vlm_lora_t2")):
+        f = MODELS_DIR / d / "training_stats.json"
+        if f.exists(): stats[k] = json.loads(f.read_text())["stats"]
+    return {"before": B.get("model_quality", []), "after": N.get("model_quality", []),
+            "decision": N.get("tier2_finetune_decision"), "throughput": (N.get("escalation_policy") or {}).get("held_out"),
+            "capacity": (N.get("escalation_policy_capacity_mode") or {}).get("held_out"),
+            "capacity_t_lo": (N.get("escalation_policy_capacity_mode") or {}).get("t_lo"),
+            "serving_before": (B.get("serving") or {}).get("tier2"), "serving_after": (N.get("serving") or {}).get("tier2"),
+            "energy_before": (B.get("S5_energy") or {}).get("tier2"), "energy_after": (N.get("S5_energy") or {}).get("tier2"),
+            "training": stats,
+            "flips": {"tier1": flips(RESULTS_DIR / "llm_t1_zero.csv", RESULTS_DIR / "llm_t1_ft.csv"),
+                      "tier2": flips(RESULTS_DIR.parent / "results_baseline" / "llm_t2_ref.csv", RESULTS_DIR / "llm_t2_ref.csv")}}
 
 
 @app.get("/api/thumb")
