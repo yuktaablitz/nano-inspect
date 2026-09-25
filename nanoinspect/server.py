@@ -293,6 +293,50 @@ def inspect_sample(r: SampleReq):
     return out
 
 
+DEMO_SCENARIOS = [
+    {"id": "accept", "title": "Good part", "expect": "accept", "category": "bottle", "path": "bottle/test/good/002.png",
+     "story": "Tier 1 is confident the bottle is good, so it is accepted in about 2 seconds. No big model, no person."},
+    {"id": "reject", "title": "Clear defect", "expect": "reject", "category": "bottle", "path": "bottle/test/broken_large/000.png",
+     "story": "Both LLM tiers see a broken rim. Rejecting is cheaper than asking a person, and the line receives a machine instruction."},
+    {"id": "review", "title": "Models disagree", "expect": "manual_review", "category": "bottle", "path": "bottle/test/contamination/009.png",
+     "story": "Tier 1 sees contamination, tier 2 does not. The disagreement goes to a person in the cloud; only a crop leaves the plant."},
+]
+
+
+@app.get("/api/demo_scenarios")
+def demo_scenarios():
+    return DEMO_SCENARIOS
+
+
+class PathReq(BaseModel):
+    category: str
+    path: str
+    force_t2: bool = False
+
+
+@app.post("/api/inspect_path")
+def inspect_path(r: PathReq):
+    p = (DATA_ROOT / r.path).resolve()
+    if DATA_ROOT.resolve() not in p.parents or not p.exists() or r.category not in CATEGORIES:
+        raise HTTPException(404, "not a dataset image")
+    it = next((i for i in S.items if i["path"] == r.path), None)
+    out = S.cascade(data.load_pil(r.path), r.category, "demo", force_t2=r.force_t2, image_ref=r.path,
+                    true_label=it["label"] if it else None, image_bytes=p.stat().st_size)
+    if it:
+        out["ground_truth"] = {"label": "defective" if it["label"] else "good", "defect_type": it["true_type"],
+                               "location": it["true_location"], "path": it["path"]}
+    return out
+
+
+@app.get("/api/showcase")
+def showcase(n: int = 24, seed: int = 7):
+    rng = random.Random(seed); cats = list(CATEGORIES); out = []
+    for i in range(n):
+        c = cats[i % len(cats)]; pool = [x for x in S.items if x["category"] == c]
+        it = rng.choice(pool); out.append({"category": c, "path": it["path"], "label": it["label"], "type": it["true_type"]})
+    return out
+
+
 class ChatReq(BaseModel):
     inspection_id: int
     question: str

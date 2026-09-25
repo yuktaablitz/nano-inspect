@@ -13,17 +13,50 @@ const BUCKET = {
   t1_flag_t2_good: "Tier 1 flags · tier 2 says good", t1_good_t2_defect: "Tier 1 good · tier 2 sees defect",
   t2_unusable: "Tier 2 answer unusable", input_ood: "Image unlike training data", unreadable: "Unreadable image"
 };
-let META = null, view = "overview", devHist = [], lastInspection = null, chatHist = [];
+let META = null, view = "home", devHist = [], lastInspection = null, chatHist = [];
+const thumb = (p, size = 400) => `/api/thumb?path=${encodeURIComponent(p)}&size=${size}`;
 
-// ---------------------------------------------------------------- navigation
-document.querySelectorAll("nav a").forEach(a => a.onclick = () => { history.replaceState(null, "", "#" + a.dataset.view); show(a.dataset.view); });
+// ---------------------------------------------------------------- routing: #page in the URL drives everything
+const PAGES = {
+  home: null,
+  overview: ["Live overview", "Every decision made on this Nano, per tier, with device telemetry and savings.", "Inspection System", "screw/test/good/002.png"],
+  inspect: ["Inspect a part", "Upload a photo or use the camera. Two local LLMs decide, explain and act.", "Inspection System", "bottle/test/broken_large/000.png"],
+  line: ["Production line", "A simulated line through the full cascade, with the line controller's instructions.", "Inspection System", "zipper/test/good/002.png"],
+  escalations: ["Cloud escalations", "Store-and-forward outbox: only crops of escalated parts leave the building.", "Inspection System", "cable/test/good/003.png"],
+  how: ["How it works", "A cheap LLM, an expensive LLM, then a human, and why each exists.", "How It Works", "hazelnut/test/crack/003.png"],
+  policy: ["Escalation policy & cost", "An explicit, measurable rule for when a person should look.", "How It Works", "metal_nut/test/good/002.png"],
+  sop: ["SOP & machine instructions", "ISO 9001 §8.7 procedures turned into instructions the line can execute.", "How It Works", "transistor/test/good/002.png"],
+  models: ["Models & serving", "Quality against baselines and serving performance, measured on the Nano.", "Evidence", "screw/test/thread_side/008.png"],
+  savings: ["Cloud vs edge savings", "Tokens, API cost, energy and time: what running locally saves.", "Evidence", "pill/test/good/002.png"],
+  evidence: ["Benchmarks", "Soak test, robustness, escalation policy and line simulation.", "Evidence", "tile/test/good/002.png"],
+};
+const SECTION_HOME = { "Inspection System": "overview", "How It Works": "how", "Evidence": "evidence" };
+function route() {
+  const v = (location.hash.slice(1) || "home"); show(PAGES.hasOwnProperty(v) ? v : "home");
+}
+window.addEventListener("hashchange", route);
+function go(v) { if (location.hash === "#" + v) route(); else location.hash = v; }
 function show(v) {
   view = v;
-  document.querySelectorAll("nav a").forEach(a => a.classList.toggle("on", a.dataset.view === v));
   document.querySelectorAll(".view").forEach(s => s.hidden = s.id !== `v-${v}`);
+  const P = PAGES[v];
+  $("#banner").hidden = $("#crumbs").hidden = !P;
+  if (P) {
+    $("#banner-title").textContent = P[0]; $("#banner-sub").textContent = P[1];
+    $("#banner-bg").style.backgroundImage = `url(${thumb(P[3], 900)})`;
+    const sec = SECTION_HOME[P[2]];
+    $("#crumbs").innerHTML = `<a href="#home">Home</a> » <a href="#${sec}">${P[2]}</a> » ${esc(P[0])}`;
+  }
+  document.querySelectorAll(".mi").forEach(m => { m.classList.remove("open");
+    m.querySelector(":scope > a").classList.toggle("on", !!P && P[2] === m.querySelector(":scope > a").textContent.trim()); });
+  window.scrollTo(0, 0);
+  if (v === "home") home();
   if (v === "policy") loadPolicy();
   if (v === "evidence") loadEvidence();
   if (v === "models") loadModels();
+  if (v === "how") how();
+  if (v === "sop") sop();
+  if (v === "savings") savings();
   tick();
 }
 
@@ -36,12 +69,14 @@ async function tick() {
     if (view === "line") line();
     if (view === "escalations") escalations(o);
     if (view === "models") loadModels(true);
+    if (view === "savings") savings();
+    if (view === "home") homeLive(o);
   } catch (e) { $("#st-sync").innerHTML = `<span class="dot bad"></span>Edge API unreachable`; }
 }
 function header(o) {
   const d = o.device || {}, s = o.sync;
   devHist.push({ t: Date.now(), temp: d.temp_c, w: d.power_w, u: d.gpu_util_pct }); devHist = devHist.slice(-120);
-  $("#dev").innerHTML = `HP ZGX Nano · GB10<br>${d.gpu_util_pct ?? "–"}% GPU · ${d.temp_c ?? "–"} °C · ${d.power_w ?? "–"} W`;
+  $("#dev").innerHTML = `HP ZGX Nano · GB10 · ${d.gpu_util_pct ?? "–"}% GPU · ${d.temp_c ?? "–"} °C · ${d.power_w ?? "–"} W`;
   const t1 = META?.tier1?.healthy, t2 = META?.tier2?.healthy;
   $("#st-vlm").innerHTML = `<span class="dot ${t1 ? "ok" : "bad"}"></span>T1 7B+LoRA <span class="dot ${t2 ? "ok" : "bad"}" style="margin-left:6px"></span>T2 27B · vLLM on this device`;
   const q = o.stats.escalations.queued || 0;
@@ -77,7 +112,7 @@ function overview(o) {
 }
 function partTile(r) {
   const img = r.image_ref && r.image_ref.includes("/") ? `/api/thumb?path=${encodeURIComponent(r.image_ref)}` : "";
-  return `<div class="part ${r.decision}" title="${esc(r.reason)}">${img ? `<img src="${img}" loading="lazy">` : `<div style="aspect-ratio:1"></div>`}
+  return `<div class="part ${r.decision}" title="${esc(r.reason)} (click to inspect again)" ${img ? `data-reinspect="${esc(r.image_ref)}" data-cat="${esc(r.category)}"` : ""}>${img ? `<img src="${img}" loading="lazy">` : `<div style="aspect-ratio:1"></div>`}
     <span class="t t${r.tier}">T${r.tier}</span><div class="lbl"><b>${esc(r.category)}</b><span>${DEC[r.decision]}</span></div></div>`;
 }
 function spark(vals, label, max) {
@@ -87,7 +122,7 @@ function spark(vals, label, max) {
   return `<div class="small"><b>${label}</b> <span class="muted">${v[v.length - 1].toFixed(0)}</span></div>
     <svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" preserveAspectRatio="none"><polyline points="${pts}" fill="none" stroke="var(--accent)" stroke-width="2"/></svg>`;
 }
-$("#hero-start").onclick = () => { history.replaceState(null, "", "#line"); show("line"); startLine(); };
+
 
 // ---------------------------------------------------------------- cloud vs edge savings
 const usd = (x, d = 2) => x == null ? "–" : `$${Number(x).toLocaleString(undefined, { minimumFractionDigits: d, maximumFractionDigits: d })}`;
@@ -175,11 +210,11 @@ function tierLine(r, n) {
 }
 function renderResult(r) {
   lastInspection = r.inspection_id; chatHist = []; $("#chat-log").innerHTML = "";
-  if (!r.marked_b64) { $("#result").innerHTML = `<div class="banner manual_review"><div class="d">HUMAN REVIEW</div></div><div class="why">${esc(r.reason)}</div>`; return; }
+  if (!r.marked_b64) { $("#result").innerHTML = `<div class="verdict manual_review"><div class="d">HUMAN REVIEW</div></div><div class="why">${esc(r.reason)}</div>`; return; }
   const path = [1, 2, 3].map(t => `<span class="chip ${r.tier >= t ? "on t" + t : ""}">${TIER[t]}</span>`).join("");
   const gt = r.ground_truth ? `<div>Ground truth (dataset)</div><div><b>${esc(r.ground_truth.label)}</b>${r.ground_truth.label === "defective" ? ` · ${esc(r.ground_truth.defect_type)} @ ${esc(r.ground_truth.location)}` : ""}</div>` : "";
   $("#result").innerHTML = `
-    <div class="banner ${r.decision}"><div><div class="d">${DEC[r.decision]}</div><div class="small">${esc(r.recommended_action)}</div></div><div class="path">${path}</div></div>
+    <div class="verdict ${r.decision}"><div><div class="d">${DEC[r.decision]}</div><div class="small">${esc(r.recommended_action)}</div></div><div class="path">${path}</div></div>
     <div class="refs four"><figure><img src="${r.image_b64}"><figcaption>Part (${esc(r.category)})</figcaption></figure>
       <figure><img src="${r.delta_b64}"><figcaption>Delta vs 40 good parts (patch distance)</figcaption></figure>
       <figure><img src="${r.marked_b64}"><figcaption>Region the LLM reported</figcaption></figure>
@@ -238,7 +273,7 @@ async function line() {
       ${f.t2?.explanation ? `<div class="why">“${esc(f.t2.explanation)}”</div>` : ""}<div class="why">${esc(f.reason)}</div>` : `<div class="muted">Nothing sent to tier 2 yet.</div>`;
   $("#stream").innerHTML = L.events.map(e => partTile({ ...e, image_ref: e.path })).join("");
   const C = await api("/api/controller?n=12");
-  $("#controller").innerHTML = (C.stopped ? `<div class="banner reject"><div><div class="d">LINE STOP</div><div class="small">${esc(C.stopped.defect_type)} on ${esc(C.stopped.product)} repeated ${C.stopped.hits}× within ${C.stopped.window} parts (SOP containment rule) at ${C.stopped.time}</div></div><button id="ctl-reset">Acknowledge</button></div>` : "") +
+  $("#controller").innerHTML = (C.stopped ? `<div class="verdict reject"><div><div class="d">LINE STOP</div><div class="small">${esc(C.stopped.defect_type)} on ${esc(C.stopped.product)} repeated ${C.stopped.hits}× within ${C.stopped.window} parts (SOP containment rule) at ${C.stopped.time}</div></div><button id="ctl-reset">Acknowledge</button></div>` : "") +
     `<div class="table-wrap"><table><tr><th>Time</th><th>Part</th><th>Product</th><th>Command</th><th>Disposition</th><th>NCR</th><th>Probable cause</th></tr>` +
     C.messages.map(m => `<tr><td>${esc(m.timestamp.slice(11))}</td><td>${esc(m.part_id)}</td><td>${esc(m.product)}</td><td><code>${esc(m.line_command.action)}</code></td>
       <td>${esc(m.disposition)}</td><td>${esc(m.nonconformance?.ncr_id || "")}</td><td>${esc(m.nonconformance?.probable_cause || "")}</td></tr>`).join("") + `</table></div>`;
@@ -370,14 +405,173 @@ async function loadEvidence() {
     .map(f => `<figure><img src="/results/${f}" loading="lazy"><figcaption>${esc(FIG[f])}</figcaption></figure>`).join("");
 }
 
+// ---------------------------------------------------------------- home page
+let BENCH = null, SHOWCASE = null;
+async function home() {
+  if (!SHOWCASE) {
+    SHOWCASE = await api("/api/showcase?n=32").catch(() => []);
+    $("#hero-bg").innerHTML = SHOWCASE.map(x => `<img src="${thumb(x.path, 240)}" alt="">`).join("");
+  }
+  if (!BENCH) BENCH = (await api("/api/benchmarks").catch(() => ({}))).summary || {};
+  const Q = BENCH.model_quality || [], q = pre => Q.find(r => r.config.startsWith(pre)) || {};
+  const t1 = q("Tier 1"), t2 = q("Tier 2"), z7 = q("Baseline: Qwen2.5-VL-7B zero"), H = BENCH.escalation_policy?.held_out || {};
+  const cas = H["NanoInspect cascade"] || {}, hum = H["Human inspects every part"] || {};
+  const sv1 = (BENCH.serving?.tier1 || []).reduce((m, r) => !m || r.requests_per_s > m.requests_per_s ? r : m, null);
+  const sv2 = (BENCH.serving?.tier2 || []).reduce((m, r) => !m || r.requests_per_s > m.requests_per_s ? r : m, null);
+  $("#h-t1").textContent = t1.recall ? `${pct(t1.recall, 0)} of defects caught · ${sv1 ? sv1.requests_per_s + " parts/s" : ""} →` : "Learn more →";
+  $("#h-t2").textContent = t2.recall ? `ROC-AUC ${t2.roc_auc.toFixed(3)} · explains every flagged part →` : "Learn more →";
+  $("#h-t3").textContent = cas.human_reviews_per_1000 != null ? `${cas.human_reviews_per_1000.toFixed(0)} reviews per 1,000 parts instead of 1,000 →` : "Learn more →";
+  const soak = BENCH.S4_combined_soak || {};
+  const rows = [
+    { tag: "Tier 1 · every part", img: "screw/test/thread_side/008.png", title: "Qwen2.5-VL-7B, fine-tuned on the Nano",
+      text: "A 7-billion-parameter vision-language model, taught on this device with LoRA (28 minutes, 0.5% of its weights, real defect photos only). It checks every part and answers with a verdict, the defect type and where it is, plus a probability read from its own token log-probabilities.",
+      facts: [[t1.roc_auc?.toFixed(3), "ROC-AUC"], [pct(t1.recall, 0), `defects caught (zero-shot: ${pct(z7.recall, 0)})`], [sv1 ? sv1.requests_per_s : "–", "parts / s served"]], href: "#models" },
+    { tag: "Tier 2 · doubtful parts", img: "hazelnut/test/crack/003.png", title: "Qwen3.8-27B with a known-good reference",
+      text: "Verified for DGX Spark in the vLLM recipes, served in NVFP4. It sees the part next to a known-good part, confirms or clears tier 1's flag, explains the defect in a sentence and writes the nonconformance report. Operators can chat with it about any part.",
+      facts: [[t2.roc_auc?.toFixed(3), "ROC-AUC"], [pct(t2.accuracy, 0), "accuracy"], [sv2 ? sv2.requests_per_s : "–", "parts / s served"]], href: "#how" },
+    { tag: "Tier 3 · only when it pays", img: "bottle/test/contamination/009.png", title: "A person in the cloud, by a cost rule",
+      text: "When the cheaper automatic decision would still cost more than a human review, the part goes to a reviewer. Only a small crop leaves the plant, through a store-and-forward outbox that survives outages. The reviewer's label returns to the Nano as training data.",
+      facts: [[cas.cost_per_1000_usd ? "$" + cas.cost_per_1000_usd.toFixed(0) : "–", "per 1,000 parts"], [hum.cost_per_1000_usd ? "$" + hum.cost_per_1000_usd.toFixed(0) : "–", "if a human checks all"], [cas.human_reviews_per_1000?.toFixed(0) ?? "–", "reviews per 1,000"]], href: "#policy" },
+    { tag: "After the verdict", img: "transistor/test/misplaced/002.png", title: "SOP-grounded instructions for the line",
+      text: "Every decision becomes schema-validated JSON for the PLC / MES: divert to the reject or hold bin, a nonconformance report whose cause must come from the plant's SOP, and an automatic line stop when a defect keeps repeating.",
+      facts: [["73", "defect types in the SOP"], ["ISO 9001 §8.7", "basis"], ["0", "invented actions"]], href: "#sop" },
+    { tag: "Proven on the device", img: "carpet/test/hole/002.png", title: "Offline, sustained, and cheaper than the cloud",
+      text: "Both LLMs ran together for 15 minutes without throttling, full inspections completed with every outbound connection blocked, and a cloud vision API would have cost about $89 per day for one line at 60 parts per minute.",
+      facts: [[soak.max_temp_c ? soak.max_temp_c + " °C" : "–", "max temperature, soak"], [BENCH.S6_offline ? BENCH.S6_offline.outbound_connection_attempts : "–", "outbound connections offline"], ["$" + (89).toFixed(0), "API cost avoided / day"]], href: "#savings" },
+  ];
+  $("#rows").innerHTML = rows.map((r, i) => `<div class="alt ${i % 2 ? "flip" : ""}">
+      <a class="alt-img" href="${r.href}"><img src="${thumb(r.img, 900)}" alt=""><span class="tag">${r.tag}</span></a>
+      <div><h3>${r.title}</h3><p>${r.text}</p><div class="facts">${r.facts.map(([v, k]) => `<div><b>${v ?? "–"}</b><span>${k}</span></div>`).join("")}</div>
+        <a class="pill" href="${r.href}">Learn more</a></div></div>`).join("");
+  tick();
+}
+async function homeLive(o) {
+  const st = o.stats, S = await api("/api/savings").catch(() => null), dec = st.by_decision, total = st.total || 0;
+  const items = [
+    [num(total), "parts inspected on this Nano", "#overview"],
+    [total ? pct(((dec.accept || 0) + (dec.reject || 0)) / total, 0) : "–", "decided at the edge", "#overview"],
+    [S ? usd(S.live.net_saved_usd, 3) : "–", "cloud API cost avoided so far", "#savings", true],
+    [S ? num(S.live.tokens_total) : "–", "tokens processed locally", "#savings"],
+    [st.bytes_inspected ? pct(1 - st.bytes_sent_to_cloud / st.bytes_inspected, 2) : "–", "image data kept on-site", "#escalations"],
+    [(o.device || {}).temp_c != null ? o.device.temp_c + " °C" : "–", "GPU temperature now", "#evidence"],
+  ];
+  $("#home-stats").innerHTML = items.map(([v, k, h, o2]) => `<a class="stat" href="${h}"><div class="v ${o2 ? "o" : ""}">${v}</div><div class="k">${k}</div></a>`).join("");
+}
+
+// ---------------------------------------------------------------- how it works
+async function how() {
+  if (!BENCH) BENCH = (await api("/api/benchmarks").catch(() => ({}))).summary || {};
+  const rows = [
+    ["Tier 1 checks every part", "screw/test/scratch_head/002.png", "The fine-tuned 7B answers in JSON: verdict, defect type, 3×3 location. Its probability of 'defective' comes from the verdict token's log-probabilities. If it is confident the part is good (below a threshold set on validation parts), the part is accepted at once; 5% of those are randomly audited by tier 2.", "#models", "See model quality"],
+    ["Tier 2 double-checks doubtful parts", "hazelnut/test/crack/003.png", "Qwen3.8-27B gets the part next to a known-good reference and a prompt that tells it normal variation is not a defect. It confirms or clears the flag and explains what it sees, and a training-free patch distance to 40 good parts draws the heatmap.", "#inspect", "Try it on a part"],
+    ["The cost rule decides who decides", "bottle/test/contamination/009.png", "Both answers put the part in an evidence bucket. Bayes' rule with the line's defect rate gives P(defect); the part goes to a person only if the cheaper automatic option costs more than a review. The quality manager sets the costs.", "#policy", "Open the policy"],
+    ["The line gets an instruction", "transistor/test/misplaced/002.png", "The SOP turns the verdict into a disposition, containment and a process check; tier 2 fills in the nonconformance report; schema-validated JSON goes to the PLC / MES, and repeated defects stop the line.", "#sop", "Open the SOP"],
+  ];
+  $("#how-rows").innerHTML = rows.map(([t, img, txt, h, b], i) => `<div class="alt ${i % 2 ? "flip" : ""}">
+      <a class="alt-img" href="${h}"><img src="${thumb(img, 900)}" alt=""><span class="tag">Step ${i + 1}</span></a>
+      <div><h3>${t}</h3><p>${txt}</p><a class="pill" href="${h}">${b}</a></div></div>`).join("");
+}
+
+// ---------------------------------------------------------------- SOP explorer
+let SOP = null, sopProduct = "bottle";
+async function sop(product) {
+  if (!SOP) SOP = await api("/api/sop");
+  if (product) sopProduct = product;
+  $("#sop-meta").textContent = `${SOP.sop_id} · version ${SOP.version} · effective ${SOP.effective} · owner: ${SOP.owner}`;
+  $("#sop-basis").textContent = SOP.basis + " " + SOP.note;
+  $("#sop-products").innerHTML = Object.keys(SOP.products).map(c => `<button class="${c === sopProduct ? "on" : ""}" data-sop="${c}">${c.replace("_", " ")}</button>`).join("");
+  const P = SOP.products[sopProduct];
+  $("#sop-table").innerHTML = `<tr><th>Defect type (${esc(P.station)})</th><th>Severity</th><th>Disposition</th><th>Likely causes</th><th>Process check</th><th>Rework</th></tr>` +
+    Object.entries(P.defects).map(([d, e]) => `<tr><td><b>${d.replaceAll("_", " ")}</b></td><td><span class="pill ${e.severity}">${e.severity}</span></td>
+      <td>${esc(SOP.dispositions[e.severity].disposition.replaceAll("_", " "))} → <code>${SOP.dispositions[e.severity].line_command}</code></td>
+      <td>${e.likely_causes.map(esc).join("; ")}</td><td>${esc(e.process_check)}</td><td>${e.rework_allowed ? "allowed" : "no"}</td></tr>`).join("");
+  $("#sop-disp").innerHTML = `<tr><th>Severity</th><th>Disposition</th><th>Line command</th><th>Containment</th></tr>` +
+    Object.entries(SOP.dispositions).map(([k, d]) => `<tr><td><span class="pill ${k}">${k}</span></td><td>${d.disposition.replaceAll("_", " ")}</td><td><code>${d.line_command}</code></td>
+      <td class="small">stop line if ${d.containment.stop_line_if_repeats} in ${d.containment.window_parts} parts; re-check last ${d.containment.recheck_last_n}; notify ${d.containment.notify.join(", ")}</td></tr>`).join("");
+  const C = await api("/api/controller?n=1").catch(() => null);
+  let msg = C?.messages?.[0];
+  if (!msg) msg = await fetch("/results/example_machine_instruction.json").then(r => r.json()).catch(() => null);
+  $("#sop-json").textContent = msg ? JSON.stringify(msg, null, 2) : "No instruction yet: inspect a defective part.";
+}
+
+// ---------------------------------------------------------------- demo scenarios (modal + inspect page)
+let SCEN = [];
+async function loadScenarios() {
+  SCEN = await api("/api/demo_scenarios").catch(() => []);
+  $("#scenarios").innerHTML = SCEN.map(s => `<div class="sc" id="sc-${s.id}"><img src="${thumb(s.path, 500)}" alt="">
+      <div class="in"><span class="pill ${s.expect}">${DEC[s.expect]}</span><b>${esc(s.title)}</b><p>${esc(s.story)}</p>
+      <div class="res" id="sc-res-${s.id}"></div><button class="primary" data-run="${s.id}">Run on the Nano</button></div></div>`).join("");
+  $("#demo-mini").innerHTML = SCEN.map(s => `<button data-mini="${s.id}">${esc(s.title)} → ${DEC[s.expect].toLowerCase()}</button>`).join("");
+}
+async function runScenario(id, where) {
+  const s = SCEN.find(x => x.id === id); if (!s) return;
+  if (where === "modal") $(`#sc-res-${id}`).innerHTML = `<span class="muted">Running tier 1${s.expect !== "accept" ? " and tier 2" : ""} on the Nano…</span>`;
+  else { go("inspect"); $("#cat").value = s.category; busy(); }
+  let r;
+  try { r = await post("/api/inspect_path", { category: s.category, path: s.path }); }
+  catch (e) { const m = `Models unavailable (${esc(e.message)}). Are both vLLM tiers serving?`; if (where === "modal") $(`#sc-res-${id}`).innerHTML = m; else $("#result").innerHTML = `<div class="placeholder">${m}</div>`; return; }
+  if (where === "modal") {
+    $(`#sc-res-${id}`).innerHTML = `<div><b>Result:</b> <span class="pill ${r.decision}">${DEC[r.decision]}</span> at tier ${r.tier} · ${r.total_s.toFixed(1)} s</div>
+      <div class="muted small">${esc(r.reason).slice(0, 180)}</div><a class="small" href="#inspect" data-open="${id}">Open the full result →</a>`;
+    lastScenario = r;
+  } else renderResult(r);
+}
+let lastScenario = null;
+function openDemo() { $("#demo").hidden = false; if (!SCEN.length) loadScenarios(); }
+
+// ---------------------------------------------------------------- search
+const PAGE_WORDS = Object.entries(PAGES).filter(([k, v]) => v).map(([k, v]) => ({ label: v[0], sub: v[1], href: "#" + k }));
+function searchResults(q) {
+  q = q.trim().toLowerCase(); if (!q) return [];
+  const out = PAGE_WORDS.filter(p => (p.label + " " + p.sub).toLowerCase().includes(q)).map(p => ({ ...p, kind: "page" }));
+  (META?.categories || []).forEach(c => {
+    if (c.replace("_", " ").includes(q)) out.push({ label: `Inspect a ${c.replace("_", " ")}`, sub: `${(META.defect_types[c] || []).length} defect types in the SOP`, act: () => { go("inspect"); $("#cat").value = c; } });
+    (META.defect_types[c] || []).forEach(d => { if (d.replaceAll("_", " ").includes(q)) out.push({ label: `${d.replaceAll("_", " ")} (${c.replace("_", " ")})`, sub: "SOP entry: severity, causes, process check", act: () => { go("sop"); setTimeout(() => sop(c), 50); } }); });
+  });
+  return out.slice(0, 12);
+}
+let SR = [];
+$("#search").addEventListener("input", e => {
+  SR = searchResults(e.target.value);
+  $("#search-res").hidden = !SR.length;
+  $("#search-res").innerHTML = SR.map((r, i) => `<a data-sr="${i}" ${r.href ? `href="${r.href}"` : ""}><b>${esc(r.label)}</b><small>${esc(r.sub)}</small></a>`).join("");
+});
+$("#search").addEventListener("keydown", e => { if (e.key === "Enter" && SR.length) { pickSearch(0); } if (e.key === "Escape") $("#search-res").hidden = true; });
+function pickSearch(i) { const r = SR[i]; $("#search-res").hidden = true; $("#search").value = ""; if (r.act) r.act(); else if (r.href) go(r.href.slice(1)); }
+
+// ---------------------------------------------------------------- global clicks: menus, demo, re-inspect, lightbox, SOP chips
+document.querySelectorAll(".mi").forEach(m => {
+  let t; m.addEventListener("mouseenter", () => { clearTimeout(t); document.querySelectorAll(".mi").forEach(x => x !== m && x.classList.remove("open")); m.classList.add("open"); });
+  m.addEventListener("mouseleave", () => { t = setTimeout(() => m.classList.remove("open"), 180); });
+});
+document.addEventListener("click", e => {
+  const el = e.target.closest("[data-demo],#demo-open,[data-run],[data-mini],[data-open],[data-reinspect],[data-sr],[data-sop],.gallery img,.refs img,.mega a");
+  if (!el) { if (!e.target.closest(".search")) $("#search-res").hidden = true; return; }
+  if (el.matches(".mega a")) { el.closest(".mi").classList.remove("open"); return; }
+  if (el.matches("[data-demo],#demo-open")) { e.preventDefault(); openDemo(); }
+  else if (el.dataset.run) runScenario(el.dataset.run, "modal");
+  else if (el.dataset.mini) { if (!SCEN.length) loadScenarios().then(() => runScenario(el.dataset.mini, "page")); else runScenario(el.dataset.mini, "page"); }
+  else if (el.dataset.open) { e.preventDefault(); $("#demo").hidden = true; go("inspect"); if (lastScenario) renderResult(lastScenario); }
+  else if (el.dataset.reinspect) { go("inspect"); $("#cat").value = el.dataset.cat; busy();
+    post("/api/inspect_path", { category: el.dataset.cat, path: el.dataset.reinspect }).then(renderResult).catch(err => $("#result").innerHTML = `<div class="placeholder">${esc(err.message)}</div>`); }
+  else if (el.dataset.sr) { e.preventDefault(); pickSearch(+el.dataset.sr); }
+  else if (el.dataset.sop) sop(el.dataset.sop);
+  else if (el.matches(".gallery img,.refs img")) { const d = document.createElement("div"); d.className = "lightbox"; d.innerHTML = `<img src="${el.src}">`; d.onclick = () => d.remove(); document.body.appendChild(d); }
+});
+$("#demo-close").onclick = () => $("#demo").hidden = true;
+$("#demo").addEventListener("click", e => { if (e.target.id === "demo") $("#demo").hidden = true; });
+document.addEventListener("keydown", e => { if (e.key === "Escape") { $("#demo").hidden = true; document.querySelector(".lightbox")?.remove(); } });
+$("#drop").addEventListener("click", e => { if (!e.target.closest("a")) file.click(); });
+
 // ---------------------------------------------------------------- boot
 (async () => {
+  document.querySelectorAll("img[data-thumb]").forEach(i => i.src = thumb(i.dataset.thumb, 600));
   META = await api("/api/meta");
   $("#site").textContent = META.site;
+  $("#cloud-top").href = (META.cloud_url || "").replace("127.0.0.1", location.hostname);
   $("#cat").innerHTML = META.categories.map(c => `<option ${c === "bottle" ? "selected" : ""}>${c}</option>`).join("");
-  const h = location.hash.slice(1);
-  if (h && document.getElementById(`v-${h}`)) show(h); else tick();
-  setInterval(tick, 2000);
+  loadScenarios();
+  route();
+  setInterval(tick, 2500);
   setInterval(async () => { META = await api("/api/meta").catch(() => META); }, 15000);
 })();
-window.addEventListener("hashchange", () => { const h = location.hash.slice(1); if (document.getElementById(`v-${h}`)) show(h); });
