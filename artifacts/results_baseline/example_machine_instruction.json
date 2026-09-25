@@ -1,7 +1,7 @@
 {
  "schema": "nanoinspect.disposition/v1",
- "message_id": "3597a2c56485",
- "timestamp": "2026-09-25T11:07:58",
+ "message_id": "cbb2d144b859",
+ "timestamp": "2026-09-25T04:46:09",
  "station": "Tile pressing + glazing",
  "product": "tile",
  "part_id": "DEMO-000001",
@@ -21,13 +21,15 @@
   "ncr_id": "NCR-20260925-00001",
   "defect_type": "crack",
   "severity": "critical",
-  "location": "center",
-  "description": "Visible crack at the center of the part that the reference part does not have.",
+  "location": "top-left",
+  "description": "A distinct, dark linear crack traverses the surface of the tile, which is absent in the reference part.",
   "probable_cause": "kiln thermal shock",
   "process_check": "Check kiln cooling curve",
   "rework_allowed": false,
   "operator_instructions": [
-   "Check kiln cooling curve."
+   "Quarantine the rejected tile immediately.",
+   "Check the kiln cooling curve for deviations.",
+   "Report the nonconformance to the supervisor."
   ]
  },
  "containment": {

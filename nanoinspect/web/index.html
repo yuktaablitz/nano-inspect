@@ -228,6 +228,7 @@
       <h3>When does a part go to a human in the cloud?</h3>
       <p class="muted">After both edge models have looked at a part, it lands in one <b>evidence bucket</b>. We measured how often each bucket happens for defective and for good parts on held-out data. With your line's defect rate, Bayes' rule gives the probability that a part in that bucket is defective. A part is escalated <b>only if the cheaper automatic decision still costs more than a human review</b>. The quality manager sets these costs from the plant's cost-of-quality figures.</p>
       <div class="controls">
+        <label>Tier-2 routing<select id="c-mode"><option value="throughput">Throughput mode: only doubtful parts</option><option value="capacity">Capacity mode: as many as tier 2 can serve</option></select></label>
         <label>Cost of an escaped defect ($)<input type="number" id="c-esc" step="1"></label>
         <label>Cost of scrapping a good part ($)<input type="number" id="c-fr" step="0.5"></label>
         <label>Cost of one human review ($)<input type="number" id="c-hr" step="0.05"></label>

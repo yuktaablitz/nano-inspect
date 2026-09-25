@@ -27,7 +27,8 @@ TIER1_URL = os.environ.get("NANOINSPECT_TIER1_URL", "http://127.0.0.1:8001")
 TIER2_URL = os.environ.get("NANOINSPECT_TIER2_URL", "http://127.0.0.1:8002")
 TIER1_MODEL = os.environ.get("NANOINSPECT_TIER1_MODEL", "nanoinspect-7b-lora")
 TIER1_BASE = "qwen2.5-vl-7b"
-TIER2_MODEL = os.environ.get("NANOINSPECT_TIER2_MODEL", "qwen3.8-27b")
+TIER2_MODEL = os.environ.get("NANOINSPECT_TIER2_MODEL", "qwen3.8-27b")        # adapter name when the fine-tuned tier 2 is served
+TIER2_BASE = os.environ.get("NANOINSPECT_TIER2_BASE", "qwen3.8-27b")          # the untrained 27B, for the zero-shot baseline
 IMG_SIZE = 448
 
 SYSTEM = ("You are an industrial visual quality inspector. You look at one product image and report "
@@ -174,8 +175,19 @@ def tier1():
     return Tier("tier1", TIER1_URL, TIER1_MODEL, tier1_prompt, n_images=1)
 
 
+T2_ADAPTER = "nanoinspect-27b-lora"
+
+
 def tier2():
-    return Tier("tier2", TIER2_URL, TIER2_MODEL, tier2_prompt, n_images=2, max_tokens=120,
+    """Uses the fine-tuned tier-2 adapter whenever the server offers it (BF16 + LoRA), else the base model (NVFP4)."""
+    model = TIER2_MODEL
+    if "NANOINSPECT_TIER2_MODEL" not in os.environ:
+        try:
+            ids = [m["id"] for m in requests.get(f"{TIER2_URL}/v1/models", timeout=3).json()["data"]]
+            if T2_ADAPTER in ids: model = T2_ADAPTER
+        except Exception:
+            pass
+    return Tier("tier2", TIER2_URL, model, tier2_prompt, n_images=2, max_tokens=120,
                 extra={"chat_template_kwargs": {"enable_thinking": False}})
 
 

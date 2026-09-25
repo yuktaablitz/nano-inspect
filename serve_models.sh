@@ -2,7 +2,7 @@
 # Serve NanoInspect's two vision-language models on the ZGX Nano with vLLM (OpenAI-compatible API).
 #   tier 1 (cheap):     Qwen2.5-VL-7B-Instruct + NanoInspect LoRA (fine-tuned on the Nano)  -> :8001
 #   tier 2 (expensive): nvidia/Qwen3.8-27B-NVFP4, flags from the vLLM recipe for DGX Spark (GB10) -> :8002
-# Usage: ./serve_models.sh [tier1|tier2|both]      Logs: artifacts/logs/vllm_tier{1,2}.log
+# Usage: ./serve_models.sh [tier1|tier2|tier2ft|both]      Logs: artifacts/logs/vllm_tier{1,2}.log
 # ZRT equivalent: replace "vllm serve" with "zrt serve" and keep every flag.
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -33,6 +33,19 @@ tier2() {
   echo "tier 2 starting (pid $!)"
 }
 
+tier2ft() {
+  # Fine-tuned tier 2: BF16 base + NanoInspect LoRA (NVFP4 weights cannot carry our adapter).
+  # "qwen3.8-27b" = untrained base (zero-shot baseline), "nanoinspect-27b-lora" = fine-tuned.
+  nohup vllm serve Qwen/Qwen3.8-27B --host 127.0.0.1 --port 8002 \
+    --served-model-name qwen3.8-27b \
+    --enable-lora --lora-modules "nanoinspect-27b-lora=$PWD/artifacts/models/vlm_lora_t2" --max-lora-rank 16 \
+    --kv-cache-dtype fp8 --gpu-memory-utilization ${TIER2_MEM:-0.55} --max-model-len 16384 \
+    --max-num-seqs 8 --max-num-batched-tokens 8192 --enable-chunked-prefill --async-scheduling \
+    --enable-prefix-caching --limit-mm-per-prompt '{"image":2}' --mm-encoder-tp-mode data \
+    > artifacts/logs/vllm_tier2.log 2>&1 &
+  echo "tier 2 (fine-tuned, BF16 + LoRA) starting (pid $!)"
+}
+
 wait_ready() {  # port name
   for i in $(seq 1 120); do
     if curl -sf "http://127.0.0.1:$1/v1/models" > /dev/null; then echo "$2 ready on :$1"; return 0; fi
@@ -44,5 +57,6 @@ wait_ready() {  # port name
 case "${1:-both}" in
   tier1) tier1; wait_ready 8001 "tier 1" ;;
   tier2) tier2; wait_ready 8002 "tier 2" ;;
+  tier2ft) tier2ft; wait_ready 8002 "tier 2 (fine-tuned)" ;;
   both)  tier1; wait_ready 8001 "tier 1"; tier2; wait_ready 8002 "tier 2" ;;
 esac

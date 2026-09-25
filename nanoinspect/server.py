@@ -71,7 +71,8 @@ class State:
         self.delta = DeltaMap(self.splits)                 # explicit good-vs-part delta (heatmap + score)
         self.act = ActionBuilder(self.t2, self.refs)   # SOP-grounded machine JSON for the line controller
         self.defect_types = {c: data.defect_types(c) for c in CATEGORIES}
-        saved = policy.load() or {}
+        self.mode = "throughput"
+        saved = policy.load(self.mode) or {}
         self.lik = saved.get("likelihoods")
         self.costs = dict(saved.get("costs") or policy.DEFAULT_COSTS)
         self.defect_rate = saved.get("defect_rate", policy.DEFAULT_DEFECT_RATE)
@@ -504,13 +505,16 @@ def network(r: NetReq):
 
 @app.get("/api/policy")
 def get_policy():
-    saved = policy.load() or {}
-    return {"costs": S.costs, "defect_rate": S.defect_rate, "audit_rate": S.audit_rate, "privacy": S.privacy, "t_lo": S.t_lo,
+    saved = policy.load(S.mode) or {}
+    modes = {m: {"t_lo": (policy.load(m) or {}).get("t_lo"), "cascade": ((policy.load(m) or {}).get("held_out_result") or {}).get("NanoInspect cascade")}
+             for m in ("throughput", "capacity") if policy.load(m)}
+    return {"mode": S.mode, "modes": modes, "costs": S.costs, "defect_rate": S.defect_rate, "audit_rate": S.audit_rate, "privacy": S.privacy, "t_lo": S.t_lo,
             "table": S.table.round(5).to_dict("records") if S.table is not None else [],
             "held_out": saved.get("held_out_result"), "fitted": S.lik is not None}
 
 
 class PolicyReq(BaseModel):
+    mode: str = "throughput"
     escape_usd: float
     false_reject_usd: float
     human_review_usd: float
@@ -521,6 +525,10 @@ class PolicyReq(BaseModel):
 
 @app.post("/api/policy")
 def set_policy(r: PolicyReq):
+    if r.mode in ("throughput", "capacity") and r.mode != S.mode and policy.load(r.mode):
+        saved = policy.load(r.mode); S.mode = r.mode
+        S.lik = saved["likelihoods"]; S.t_lo = saved.get("t_lo", S.t_lo); S.line.t_lo = S.t_lo
+        S.eval_df = S._load_eval_df()
     S.costs = {"escape_usd": r.escape_usd, "false_reject_usd": r.false_reject_usd, "human_review_usd": r.human_review_usd}
     S.defect_rate = min(max(r.defect_rate, 0.0005), 0.5); S.audit_rate = min(max(r.audit_rate, 0.0), 0.5)
     S.privacy = r.privacy if r.privacy in ("roi", "full") else "roi"

@@ -17,7 +17,7 @@ NanoInspect is an edge-first visual quality-inspection system. It runs a cascade
 | Tier | Runs on | Model | Sees |
 |---|---|---|---|
 | 1 · cheap | ZGX Nano, vLLM :8001 | **Qwen2.5-VL-7B + LoRA fine-tuned on the Nano** (0.48% of weights, 28 min, real defect photos only) | every part: verdict, defect type, location, P(defect) from token log-probabilities |
-| 2 · expensive | ZGX Nano, vLLM :8002 | **Qwen3.8-27B NVFP4**, chosen from the [vLLM recipes](https://recipes.vllm.ai) verified for DGX Spark / GB10 | parts tier 1 is unsure about, plus a 5% audit of accepts; compares with a known-good reference, explains, writes the NCR, answers operator chat |
+| 2 · expensive | ZGX Nano, vLLM :8002 | **Qwen3.8-27B + LoRA fine-tuned on the Nano** (79.7M of 27.4B parameters, 0.29%, 2 h 14 min), chosen from the [vLLM recipes](https://recipes.vllm.ai) verified for DGX Spark / GB10; served as BF16 + adapter (`./serve_models.sh tier2ft`), or untrained NVFP4 (`tier2`) | parts tier 1 is unsure about, plus a 5% audit of accepts; compares with a known-good reference, explains, writes the NCR, answers operator chat |
 | 3 · cloud | any server | a human reviewer (**no AI in the cloud**) | only parts where review is cheaper than the risk |
 
 **Escalation rule (explicit, defensible, measurable).** Both tiers' answers put a part in an evidence bucket. Bayes' rule turns error rates measured on held-out parts, plus the line's defect rate, into P(defect | bucket). Then:
@@ -37,25 +37,42 @@ The rule is fitted on one half of the evaluation images and reported on the othe
 Classical ResNet-18 classifier · training-free delta · zero-shot Qwen2.5-VL-7B · zero-shot Qwen3.8-27B · a human checks every part · tier 1 alone · tier 2 alone. All are evaluated on the same 1,096 held-out MVTec AD images (15 products, 73 real defect types).
 
 ## Results
-Measured on the ZGX Nano, before any fine-tuning of tier 2:
+All numbers are measured on the ZGX Nano, on the same 1,096 held-out images (629 defective, 467 good) that no model trained on.
 
-| Metric                                              | Result                                                                |
-|:----------------------------------------------------|:----------------------------------------------------------------------|
-| Products / defect types                             | 15 products, 73 real defect types (MVTec AD), held-out evaluation     |
-| Tier 1 ROC-AUC · recall (fine-tuned 7B)             | 0.963 · 84.4%   (zero-shot 7B: 0.836 · 21.0%)                         |
-| Tier 1 names the right defect type · location       | 74.2% · 70.1%                                                         |
-| Tier 2 ROC-AUC · recall (27B + reference)           | 0.956 · 89.2%   (27B zero-shot: 0.913 · 78.5%)                        |
-| Classical baseline ResNet-18 ROC-AUC · recall       | 0.960 · 92.8% (no defect type or location)                            |
-| LoRA fine-tune on the Nano                          | 28 min, 0.484% of parameters                                          |
-| Serving throughput (vLLM on the Nano)               | tier 1 14.66 img/s at 32 clients · tier 2 0.95 img/s at 8 clients     |
-| Cost per 1,000 parts: cascade vs human inspects all | $415.24 vs $500.00                                                    |
-| Per 1,000 parts (cascade)                           | 7.28 escapes · 11.35 scrapped · 57.0 human reviews · 148 tier-2 calls |
-| Soak 15 min, both tiers                             | 3,295 + 399 inferences · max 64 C · throttling: False · errors: 0     |
-| Energy per inspection (GPU)                         | tier 1 12.7 J · tier 2 51.5 J                                         |
-| Offline (network blocked)                           | 3/3 full inspections, 0 outbound connection attempts                  |
-| Failure cases                                       | 9 tested, 0 broken inputs accepted                                    |
+**Every model against the baselines** (tier 2 before → after its LoRA fine-tune on the Nano):
 
-On cost, the cascade comes to $415 per 1,000 parts, against $500 for "a human checks every part", $445 for ResNet alone, $486 for tier 2 alone and $497 for tier 1 alone (held-out half, $50 escape / $2 scrap / $0.50 review, 5% defect rate). The app's Overview shows tokens processed locally, cloud API cost avoided (GPT-4o-equivalent rates, as in the ZGX Console), measured electricity, and network time avoided.
+| Model | ROC-AUC | Defects caught | Good parts flagged | Right defect type | Right location |
+|---|---|---|---|---|---|
+| **Tier 1: Qwen2.5-VL-7B + LoRA (ours)** | **0.962** | **84.4%** | **5.6%** | **73.6%** | **70.6%** |
+| **Tier 2: Qwen3.8-27B + LoRA + good reference (ours)** | 0.956 → **0.988** | 89.2% → **94.3%** | 11.1% → **4.7%** | 54.0% → **78.1%** | 65.6% → **80.8%** |
+| Baseline: Qwen2.5-VL-7B zero-shot | 0.837 | 20.8% | 1.7% | 52.7% | 48.1% |
+| Baseline: Qwen3.8-27B zero-shot, single image | 0.924 | 74.7% | 7.7% | 51.3% | 64.3% |
+| Baseline: ResNet-18 classifier (not an LLM) | 0.960 | 92.8% | 14.8% | – | – |
+| Baseline: training-free difference map (not an LLM) | 0.892 | 62.5% | 4.1% | – | – |
+
+**Whole strategies, per 1,000 parts** (held-out half; $50 per escaped defect, $2 per scrapped good part, $0.50 per human review; 5% defect rate):
+
+| Strategy | Cost | Escaped defects | Good parts scrapped | Human reviews | Tier-2 calls |
+|---|---|---|---|---|---|
+| **NanoInspect, capacity mode** (tier 2 on as many parts as it can serve) | **$230** | 3.9 | 0 | 73 | 524 |
+| Tier 2 alone (fine-tuned 27B decides every part) | $217 | 3.0 | 34.1 | 0 | 1,000 (too slow for the line: 0.46 parts/s) |
+| **NanoInspect, throughput mode (default)** | **$412** | 7.2 | 11.4 | 56 | 151 |
+| ResNet-18 alone | $445 | 3.8 | 128.7 | 0 | – |
+| A person checks every part | $500 | 0 | 0 | 1,000 | – |
+| Tier 1 alone | $505 | 7.5 | 64.3 | 0 | – |
+| 27B zero-shot alone | $778 | 12.5 | 75.7 | 0 | – |
+
+**Tier-2 fine-tune decision:** the rule set before training was to keep it only if the cascade cost per 1,000 parts beat the baseline's $415.24. It came in at $411.91, so we **kept** it (`02_tier2_finetune_and_capacity.ipynb`; the baseline is tagged `pre-tier2-finetune`). The price: the adapter needs the BF16 weights, so tier 2 serves 0.46 parts/s instead of 0.95 with NVFP4, and uses 122 J per call instead of 51.
+
+**Edge performance (fine-tuned setup):**
+
+| Metric | Result |
+|---|---|
+| Soak test, 15 min, both tiers | 2,671 + 180 inferences, max 70 °C, no throttling, 0 errors |
+| Energy per inspection (GPU) | tier 1 13.7 J · tier 2 122.2 J |
+| Offline (network blocked) | 3/3 full inspections, 0 outbound connections |
+| Failure cases | 9 tested, 0 broken inputs accepted |
+| Cloud API cost avoided (60 parts/min, 16 h) | ≈ $89/day, 30M tokens, 66,000 calls (GPT-4o-equivalent rates) |
 
 See [METRICS.md](METRICS.md) for how and why each metric was chosen. The full numbers are in `artifacts/results/benchmark_summary.json`.
 
@@ -63,7 +80,7 @@ See [METRICS.md](METRICS.md) for how and why each metric was chosen. The full nu
 ```bash
 git clone <this repo> && cd nanoinspect && ./setup.sh     # venv, packages, model weights (then works offline)
 export NANOINSPECT_DATA=$HOME/Downloads/mvtec_anomaly_detection   # MVTec AD, CC BY-NC-SA 4.0
-./serve_models.sh both        # tier 1 :8001 (7B + LoRA), tier 2 :8002 (27B NVFP4); first start compiles GB10 kernels
+./serve_models.sh tier1 && ./serve_models.sh tier2ft   # 7B + LoRA on :8001, fine-tuned 27B on :8002 (or 'both' for the untrained NVFP4 27B)
 ./run_cloud.sh &              # cloud review tier :9000 (or: docker build -f cloud/Dockerfile -t nanoinspect-cloud .)
 ./run_edge.sh                 # operator app :8080
 jupyter nbconvert --to notebook --execute --inplace nanoinspect.ipynb    # all evaluations, serving benchmark, stress tests

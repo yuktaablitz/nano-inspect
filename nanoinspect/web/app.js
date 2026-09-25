@@ -353,11 +353,12 @@ async function loadModels(live) {
 async function loadPolicy() {
   const p = await api("/api/policy");
   $("#c-esc").value = p.costs.escape_usd; $("#c-fr").value = p.costs.false_reject_usd; $("#c-hr").value = p.costs.human_review_usd;
+  $("#c-mode").value = p.mode || "throughput";
   $("#c-dr").value = +(p.defect_rate * 100).toFixed(2); $("#c-ar").value = +(p.audit_rate * 100).toFixed(1); $("#c-pv").value = p.privacy;
   renderPolicy(p, await api("/api/policy/simulate"));
 }
 $("#apply").onclick = async () => {
-  const p = await post("/api/policy", { escape_usd: +$("#c-esc").value, false_reject_usd: +$("#c-fr").value, human_review_usd: +$("#c-hr").value,
+  const p = await post("/api/policy", { mode: $("#c-mode").value, escape_usd: +$("#c-esc").value, false_reject_usd: +$("#c-fr").value, human_review_usd: +$("#c-hr").value,
     defect_rate: +$("#c-dr").value / 100, audit_rate: +$("#c-ar").value / 100, privacy: $("#c-pv").value });
   renderPolicy(p, p.simulation);
 };
@@ -372,6 +373,9 @@ function renderPolicy(p, sim) {
       return `<tr><td colspan="7" class="small"><b>Break-even:</b> reject automatically only when P(defect) ≥ 1 − review/scrap = <b>${rej > 0 ? pct(rej, 0) : "any (a review costs at least as much as scrapping the part)"}</b>;
         accept automatically only when P(defect) ≤ review/escape = <b>${pct(acc, 2)}</b>; anything in between goes to a human.
         Raising the escape cost moves only the accept line, so it can never turn an escalation into a reject.</td></tr>`; })();
+  if (p.modes) $("#pol-table").insertAdjacentHTML("beforeend", `<tr><td colspan="7" class="small"><b>Routing modes (measured, default costs):</b> ` +
+      Object.entries(p.modes).map(([m, x]) => `${m} mode: tier-1 threshold ${x.t_lo?.toFixed(3)}, $${x.cascade?.cost_per_1000_usd?.toFixed(0)} per 1,000 parts, ${x.cascade?.vlm_calls_per_1000?.toFixed(0)} tier-2 calls, ${x.cascade?.human_reviews_per_1000?.toFixed(0)} human reviews`).join(" · ") +
+      `. Capacity mode needs tier 2 to keep up (about 52% of parts; fits lines up to ~50 parts/min).</td></tr>`);
   if (!sim) { $("#pol-sim").innerHTML = `<div class="muted">No held-out simulation available yet.</div>`; return; }
   const max = Math.max(...Object.values(sim).map(v => v.cost_per_1000_usd));
   $("#pol-sim").innerHTML = `<div class="bars">` + Object.entries(sim).map(([k, v]) => `<div class="b ${k.startsWith("NanoInspect") ? "me" : ""}">

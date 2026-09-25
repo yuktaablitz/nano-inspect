@@ -1,34 +1,34 @@
 {
  "likelihoods": {
   "fast_accept": {
-   "p_given_defect": 0.15847860538827258,
-   "p_given_good": 0.9424307036247335,
-   "n_defect": 99,
-   "n_good": 441
+   "p_given_defect": 0.020602218700475437,
+   "p_given_good": 0.5181236673773987,
+   "n_defect": 12,
+   "n_good": 242
   },
   "agree_good": {
-   "p_given_defect": 0.030110935023771792,
-   "p_given_good": 0.9040511727078892,
-   "n_defect": 18,
-   "n_good": 423
+   "p_given_defect": 0.006339144215530904,
+   "p_given_good": 0.5074626865671642,
+   "n_defect": 3,
+   "n_good": 237
   },
   "agree_defect": {
-   "p_given_defect": 0.8129952456418383,
-   "p_given_good": 0.010660980810234541,
-   "n_defect": 512,
-   "n_good": 4
+   "p_given_defect": 0.9270998415213946,
+   "p_given_good": 0.03837953091684435,
+   "n_defect": 584,
+   "n_good": 17
   },
   "t1_flag_t2_good": {
-   "p_given_defect": 0.030110935023771792,
-   "p_given_good": 0.04904051172707889,
-   "n_defect": 18,
-   "n_good": 22
+   "p_given_defect": 0.05388272583201268,
+   "p_given_good": 0.44562899786780386,
+   "n_defect": 33,
+   "n_good": 208
   },
   "t1_good_t2_defect": {
-   "p_given_defect": 0.12995245641838352,
-   "p_given_good": 0.04051172707889126,
-   "n_defect": 81,
-   "n_good": 18
+   "p_given_defect": 0.01584786053882726,
+   "p_given_good": 0.01279317697228145,
+   "n_defect": 9,
+   "n_good": 5
   },
   "t2_unusable": {
    "p_given_defect": 0.001584786053882726,
@@ -44,14 +44,14 @@
  },
  "defect_rate": 0.05,
  "audit_rate": 0.05,
- "t_lo": 0.5,
+ "t_lo": 0.047421255008399645,
  "held_out_result": {
   "NanoInspect cascade": {
-   "escapes_per_1000": 7.225705329153603,
-   "false_rejects_per_1000": 11.354581673306772,
-   "vlm_calls_per_1000": 151.47816258477056,
-   "human_reviews_per_1000": 55.83196992593889,
-   "cost_per_1000_usd": 411.9104147672631
+   "escapes_per_1000": 3.8714733542319757,
+   "false_rejects_per_1000": 0.0,
+   "vlm_calls_per_1000": 524.1872634852439,
+   "human_reviews_per_1000": 73.00103660592734,
+   "cost_per_1000_usd": 230.07418601456243
   },
   "Human inspects every part": {
    "escapes_per_1000": 0.0,

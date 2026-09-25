@@ -1,34 +1,34 @@
 {
  "likelihoods": {
   "fast_accept": {
-   "p_given_defect": 0.15847860538827258,
-   "p_given_good": 0.9424307036247335,
-   "n_defect": 99,
-   "n_good": 441
+   "p_given_defect": 0.15689381933438987,
+   "p_given_good": 0.9466950959488273,
+   "n_defect": 98,
+   "n_good": 443
   },
   "agree_good": {
-   "p_given_defect": 0.030110935023771792,
-   "p_given_good": 0.9040511727078892,
-   "n_defect": 18,
-   "n_good": 423
+   "p_given_defect": 0.0491283676703645,
+   "p_given_good": 0.8443496801705757,
+   "n_defect": 30,
+   "n_good": 395
   },
   "agree_defect": {
-   "p_given_defect": 0.8129952456418383,
+   "p_given_defect": 0.7828843106180665,
    "p_given_good": 0.010660980810234541,
-   "n_defect": 512,
+   "n_defect": 493,
    "n_good": 4
   },
   "t1_flag_t2_good": {
-   "p_given_defect": 0.030110935023771792,
-   "p_given_good": 0.04904051172707889,
-   "n_defect": 18,
-   "n_good": 22
+   "p_given_defect": 0.061806656101426306,
+   "p_given_good": 0.04477611940298507,
+   "n_defect": 38,
+   "n_good": 20
   },
   "t1_good_t2_defect": {
-   "p_given_defect": 0.12995245641838352,
-   "p_given_good": 0.04051172707889126,
-   "n_defect": 81,
-   "n_good": 18
+   "p_given_defect": 0.10935023771790808,
+   "p_given_good": 0.1044776119402985,
+   "n_defect": 68,
+   "n_good": 48
   },
   "t2_unusable": {
    "p_given_defect": 0.001584786053882726,
@@ -47,11 +47,11 @@
  "t_lo": 0.5,
  "held_out_result": {
   "NanoInspect cascade": {
-   "escapes_per_1000": 7.225705329153603,
+   "escapes_per_1000": 7.280564263322882,
    "false_rejects_per_1000": 11.354581673306772,
-   "vlm_calls_per_1000": 151.47816258477056,
-   "human_reviews_per_1000": 55.83196992593889,
-   "cost_per_1000_usd": 411.9104147672631
+   "vlm_calls_per_1000": 147.88254505489004,
+   "human_reviews_per_1000": 56.99852627109119,
+   "cost_per_1000_usd": 415.23663964830325
   },
   "Human inspects every part": {
    "escapes_per_1000": 0.0,
@@ -62,24 +62,24 @@
   },
   "Tier 1 alone (fine-tuned 7B decides)": {
    "escapes_per_1000": 7.523510971786834,
-   "false_rejects_per_1000": 64.34262948207171,
+   "false_rejects_per_1000": 60.557768924302785,
    "vlm_calls_per_1000": 0.0,
    "human_reviews_per_1000": 0.0,
-   "cost_per_1000_usd": 504.86080755348513
+   "cost_per_1000_usd": 497.2910864379473
   },
   "Tier 2 alone (27B with reference decides)": {
-   "escapes_per_1000": 2.978056426332288,
-   "false_rejects_per_1000": 34.06374501992032,
+   "escapes_per_1000": 5.4858934169279,
+   "false_rejects_per_1000": 105.97609561752988,
    "vlm_calls_per_1000": 0.0,
    "human_reviews_per_1000": 0.0,
-   "cost_per_1000_usd": 217.03031135645506
+   "cost_per_1000_usd": 486.24686208145476
   },
   "Baseline: 27B zero-shot alone": {
-   "escapes_per_1000": 12.539184952978054,
-   "false_rejects_per_1000": 75.69721115537848,
+   "escapes_per_1000": 10.658307210031348,
+   "false_rejects_per_1000": 109.7609561752988,
    "vlm_calls_per_1000": 0.0,
    "human_reviews_per_1000": 0.0,
-   "cost_per_1000_usd": 778.3536699596598
+   "cost_per_1000_usd": 752.437272852165
   },
   "Baseline: ResNet-18 alone (non-LLM)": {
    "escapes_per_1000": 3.761755485893417,

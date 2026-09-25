@@ -19,7 +19,9 @@ from torchvision.models import ResNet18_Weights, resnet18
 from .config import IMAGENET_MEAN, IMAGENET_STD
 from .data import load_pil
 
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+import os
+# NANOINSPECT_DELTA_DEVICE=cpu keeps this off the GPU when both LLM servers already hold most of the Nano's memory
+DEVICE = torch.device(os.environ.get("NANOINSPECT_DELTA_DEVICE") or ("cuda" if torch.cuda.is_available() else "cpu"))
 SIZE = 256
 
 

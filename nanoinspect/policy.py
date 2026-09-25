@@ -119,7 +119,7 @@ def baselines(df, defect_rate, costs):
             **single_model(df, df.score >= 0.5, "Tier 1 alone (fine-tuned 7B decides)", defect_rate, costs)}
 
 
-def fit_and_save(df, seed=0, costs=DEFAULT_COSTS, defect_rate=DEFAULT_DEFECT_RATE, audit_rate=0.05, extra_baselines=None, t_lo=None):
+def fit_and_save(df, seed=0, costs=DEFAULT_COSTS, defect_rate=DEFAULT_DEFECT_RATE, audit_rate=0.05, extra_baselines=None, t_lo=None, path=None):
     """df: label, score (tier-1 P(defective)), review_at (tier-1 fast-accept threshold), verdict (tier-2 verdict).
     Fit on one half of the evaluation parts, report on the other half (no tuning on the reported half)."""
     rng = np.random.default_rng(seed); fit_mask = rng.random(len(df)) < 0.5
@@ -129,13 +129,17 @@ def fit_and_save(df, seed=0, costs=DEFAULT_COSTS, defect_rate=DEFAULT_DEFECT_RAT
     for name, flag_col in (extra_baselines or {}).items():
         result.update(single_model(test_df, test_df[flag_col].values, name, defect_rate, costs))
     lik_all = fit_likelihoods(df)          # the deployed policy uses all evaluation parts
-    POLICY_PATH.write_text(json.dumps({"likelihoods": lik_all, "costs": costs, "defect_rate": defect_rate, "audit_rate": audit_rate, "t_lo": t_lo,
+    (path or POLICY_PATH).write_text(json.dumps({"likelihoods": lik_all, "costs": costs, "defect_rate": defect_rate, "audit_rate": audit_rate, "t_lo": t_lo,
                                        "held_out_result": result, "fit_parts": int(fit_mask.sum()),
                                        "test_parts": int((~fit_mask).sum())}, indent=1, default=float))
     return table, pd.DataFrame(result).T, lik_all
 
 
-def load():
-    if POLICY_PATH.exists():
-        return json.loads(POLICY_PATH.read_text())
-    return None
+CAPACITY_PATH = RESULTS_DIR / "escalation_policy_capacity.json"
+
+
+def load(mode="throughput"):
+    """mode 'throughput': tier 2 sees only parts tier 1 is unsure about (default).
+    mode 'capacity': tier 2 sees as many parts as its serving capacity allows (lower tier-1 threshold)."""
+    p = CAPACITY_PATH if mode == "capacity" else POLICY_PATH
+    return json.loads(p.read_text()) if p.exists() else None

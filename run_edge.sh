@@ -5,4 +5,5 @@ cd "$(dirname "$0")"
 PY=${PYTHON:-$( [ -x .venv/bin/python ] && echo .venv/bin/python || echo /home/hp14/jupyterlab/.venv/bin/python )}
 export NANOINSPECT_CLOUD_URL=${NANOINSPECT_CLOUD_URL:-http://127.0.0.1:9000}
 export NANOINSPECT_HOST=${NANOINSPECT_HOST:-127.0.0.1}
+export NANOINSPECT_DELTA_DEVICE=${NANOINSPECT_DELTA_DEVICE:-cpu}   # both LLM servers hold most GPU memory; the difference map is cheap on CPU
 exec "$PY" -m nanoinspect.server
