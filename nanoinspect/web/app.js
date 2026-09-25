@@ -563,6 +563,11 @@ document.addEventListener("click", e => {
   else if (el.matches(".gallery img,.refs img")) { const d = document.createElement("div"); d.className = "lightbox"; d.innerHTML = `<img src="${el.src}">`; d.onclick = () => d.remove(); document.body.appendChild(d); }
 });
 $("#demo-close").onclick = () => $("#demo").hidden = true;
+$("#burger").onclick = () => $(".nav").classList.toggle("open");
+window.addEventListener("hashchange", () => $(".nav").classList.remove("open"));
+document.querySelectorAll(".mi > a").forEach(a => a.addEventListener("click", e => {   // on touch screens, first tap opens the mega menu
+  if (window.matchMedia("(max-width: 1000px)").matches && !a.parentElement.classList.contains("open")) { e.preventDefault(); a.parentElement.classList.add("open"); }
+}));
 $("#demo").addEventListener("click", e => { if (e.target.id === "demo") $("#demo").hidden = true; });
 document.addEventListener("keydown", e => { if (e.key === "Escape") { $("#demo").hidden = true; document.querySelector(".lightbox")?.remove(); } });
 $("#drop").addEventListener("click", e => { if (!e.target.closest("a")) file.click(); });
