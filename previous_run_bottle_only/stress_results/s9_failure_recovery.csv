@@ -1,0 +1,9 @@
+case,decision,schema_valid,handled_as
+missing file,manual_review,True,unreadable image (FileNotFoundError: [Errno 2] No such file or directory: 'stress_results/
+random bytes,manual_review,True,unreadable image (UnidentifiedImageError: cannot identify image file 'stress_results/failu
+truncated PNG,manual_review,True,unreadable image (OSError: image file is truncated)
+all-black frame (lens cap),manual_review,True,"model decision (z=[98.4800033569336, 173.1199951171875])"
+all-white frame (overexposed),manual_review,True,"model decision (z=[85.75, 173.1199951171875])"
+pure noise,manual_review,True,"model decision (z=[6.78000020980835, 162.52000427246094])"
+LLM returns malformed text (clear defect image),reject,True,deterministic fallback; llm_fallback_used=True
+LLM raises an exception (clear defect image),reject,True,deterministic fallback; llm_fallback_used=True

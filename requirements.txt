@@ -1,0 +1,24 @@
+# Tested on HP ZGX Nano (NVIDIA GB10, aarch64), Python 3.12, CUDA 13.0.
+# torch/torchvision: install the CUDA 13.0 build first (setup.sh does this).
+torch==2.13.0
+torchvision==0.28.0
+transformers==5.17.0
+peft==0.19.1
+accelerate==1.13.0
+safetensors==0.8.0
+tokenizers==0.23.2
+numpy==2.3.5
+pandas==3.0.3
+scikit-learn==1.8.0
+matplotlib==3.10.9
+pillow==12.2.0
+psutil==7.2.2
+tqdm==4.67.3
+tabulate==0.10.0
+fastapi==0.136.3
+uvicorn==0.53.0
+python-multipart==0.0.32
+pydantic==2.13.5
+requests==2.34.2
+ipykernel==7.2.0
+nbconvert==7.17.1

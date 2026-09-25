@@ -1,0 +1,13 @@
+{
+  "project": "NanoInspect",
+  "category": "bottle",
+  "vision_model": "fine-tuned ResNet-18",
+  "agent_model": "Qwen/Qwen2.5-3B-Instruct",
+  "device": "cuda",
+  "decision": "reject",
+  "severity": "high",
+  "vision_probability": 1.0,
+  "tool_calls": 5,
+  "raw_records_sent_to_cloud": 0,
+  "report_path": "/home/hp14/Downloads/working dir RR/bottle_nanoinspect_agent_report.json"
+}

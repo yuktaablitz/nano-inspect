@@ -1,0 +1,723 @@
+{
+ "sop_id": "QA-SOP-NI-001",
+ "version": "1.0",
+ "effective": "2026-09-25",
+ "owner": "Plant quality manager",
+ "basis": "ISO 9001:2015 clause 8.7 (control of nonconforming outputs): identify, segregate, record, disposition by authorised staff.",
+ "note": "Example SOP written for the MVTec AD demo products. In a plant this file is exported from the quality management system and version-controlled; NanoInspect never invents actions that are not in it.",
+ "dispositions": {
+  "critical": {
+   "disposition": "reject",
+   "line_command": "divert_to_reject_bin",
+   "containment": {
+    "stop_line_if_repeats": 3,
+    "window_parts": 20,
+    "recheck_last_n": 20,
+    "notify": [
+     "line supervisor",
+     "quality engineer"
+    ]
+   },
+   "ncr_required": true
+  },
+  "major": {
+   "disposition": "reject",
+   "line_command": "divert_to_reject_bin",
+   "containment": {
+    "stop_line_if_repeats": 5,
+    "window_parts": 50,
+    "recheck_last_n": 10,
+    "notify": [
+     "line supervisor"
+    ]
+   },
+   "ncr_required": true
+  },
+  "minor": {
+   "disposition": "hold_for_mrb",
+   "line_command": "divert_to_hold_bin",
+   "containment": {
+    "stop_line_if_repeats": 10,
+    "window_parts": 100,
+    "recheck_last_n": 0,
+    "notify": [
+     "quality engineer"
+    ]
+   },
+   "ncr_required": true
+  }
+ },
+ "accept": {
+  "disposition": "release",
+  "line_command": "pass"
+ },
+ "manual_review": {
+  "disposition": "hold_for_review",
+  "line_command": "divert_to_hold_bin"
+ },
+ "products": {
+  "bottle": {
+   "station": "Bottle forming + filling",
+   "defects": {
+    "broken_large": {
+     "severity": "critical",
+     "likely_causes": [
+      "mould damage",
+      "handling impact at conveyor transfer"
+     ],
+     "process_check": "Inspect mould cavity and transfer star-wheel for chips",
+     "rework_allowed": false
+    },
+    "broken_small": {
+     "severity": "major",
+     "likely_causes": [
+      "mould wear",
+      "annealing stress"
+     ],
+     "process_check": "Check annealing lehr temperature profile",
+     "rework_allowed": false
+    },
+    "contamination": {
+     "severity": "major",
+     "likely_causes": [
+      "foreign particles in filling line",
+      "dirty mould"
+     ],
+     "process_check": "Flush filler nozzles; inspect mould cleanliness",
+     "rework_allowed": false
+    }
+   }
+  },
+  "cable": {
+   "station": "Cable assembly",
+   "defects": {
+    "bent_wire": {
+     "severity": "major",
+     "likely_causes": [
+      "crimp tool misalignment"
+     ],
+     "process_check": "Check crimp applicator alignment",
+     "rework_allowed": true
+    },
+    "cable_swap": {
+     "severity": "critical",
+     "likely_causes": [
+      "wrong wire colour loaded at harness station"
+     ],
+     "process_check": "Verify wire spool colour sequence at station",
+     "rework_allowed": false
+    },
+    "combined": {
+     "severity": "critical",
+     "likely_causes": [
+      "multiple upstream faults"
+     ],
+     "process_check": "Stop station; full setup verification",
+     "rework_allowed": false
+    },
+    "cut_inner_insulation": {
+     "severity": "critical",
+     "likely_causes": [
+      "stripper blade depth too deep"
+     ],
+     "process_check": "Check stripping blade depth setting",
+     "rework_allowed": false
+    },
+    "cut_outer_insulation": {
+     "severity": "major",
+     "likely_causes": [
+      "jacket slitter depth"
+     ],
+     "process_check": "Check jacket slitter depth",
+     "rework_allowed": false
+    },
+    "missing_cable": {
+     "severity": "critical",
+     "likely_causes": [
+      "feeder empty or misfeed"
+     ],
+     "process_check": "Check cable feeder and presence sensor",
+     "rework_allowed": false
+    },
+    "missing_wire": {
+     "severity": "critical",
+     "likely_causes": [
+      "wire feed fault"
+     ],
+     "process_check": "Check wire feed and count sensor",
+     "rework_allowed": false
+    },
+    "poke_insulation": {
+     "severity": "minor",
+     "likely_causes": [
+      "handling damage"
+     ],
+     "process_check": "Inspect fixtures for sharp edges",
+     "rework_allowed": true
+    }
+   }
+  },
+  "capsule": {
+   "station": "Capsule filling + printing",
+   "defects": {
+    "crack": {
+     "severity": "critical",
+     "likely_causes": [
+      "capsule shell brittleness (low humidity)"
+     ],
+     "process_check": "Check room humidity and shell moisture",
+     "rework_allowed": false
+    },
+    "faulty_imprint": {
+     "severity": "minor",
+     "likely_causes": [
+      "print roller ink or alignment"
+     ],
+     "process_check": "Clean and re-register print roller",
+     "rework_allowed": false
+    },
+    "poke": {
+     "severity": "major",
+     "likely_causes": [
+      "pin damage in filling segment"
+     ],
+     "process_check": "Inspect filling pins",
+     "rework_allowed": false
+    },
+    "scratch": {
+     "severity": "minor",
+     "likely_causes": [
+      "conveyor abrasion"
+     ],
+     "process_check": "Inspect conveyor guides",
+     "rework_allowed": false
+    },
+    "squeeze": {
+     "severity": "major",
+     "likely_causes": [
+      "closing pressure too high"
+     ],
+     "process_check": "Check capsule closing pressure",
+     "rework_allowed": false
+    }
+   }
+  },
+  "carpet": {
+   "station": "Carpet weaving / tufting",
+   "defects": {
+    "color": {
+     "severity": "minor",
+     "likely_causes": [
+      "dye batch variation"
+     ],
+     "process_check": "Check dye lot and bath temperature",
+     "rework_allowed": false
+    },
+    "cut": {
+     "severity": "major",
+     "likely_causes": [
+      "blade or handling cut"
+     ],
+     "process_check": "Inspect cutting blades and guides",
+     "rework_allowed": true
+    },
+    "hole": {
+     "severity": "major",
+     "likely_causes": [
+      "missed stitch / broken needle"
+     ],
+     "process_check": "Check needle bar for broken needles",
+     "rework_allowed": true
+    },
+    "metal_contamination": {
+     "severity": "critical",
+     "likely_causes": [
+      "metal fragment from machine wear"
+     ],
+     "process_check": "Stop loom; locate source of metal debris",
+     "rework_allowed": false
+    },
+    "thread": {
+     "severity": "minor",
+     "likely_causes": [
+      "loose yarn end"
+     ],
+     "process_check": "Check yarn tension",
+     "rework_allowed": true
+    }
+   }
+  },
+  "grid": {
+   "station": "Mesh / grid forming",
+   "defects": {
+    "bent": {
+     "severity": "major",
+     "likely_causes": [
+      "handling or tension fault"
+     ],
+     "process_check": "Check web tension",
+     "rework_allowed": false
+    },
+    "broken": {
+     "severity": "critical",
+     "likely_causes": [
+      "wire break"
+     ],
+     "process_check": "Check wire feed and weld current",
+     "rework_allowed": false
+    },
+    "glue": {
+     "severity": "minor",
+     "likely_causes": [
+      "adhesive over-application"
+     ],
+     "process_check": "Check glue dispenser volume",
+     "rework_allowed": true
+    },
+    "metal_contamination": {
+     "severity": "critical",
+     "likely_causes": [
+      "metal debris"
+     ],
+     "process_check": "Locate source of metal debris",
+     "rework_allowed": false
+    },
+    "thread": {
+     "severity": "minor",
+     "likely_causes": [
+      "foreign thread"
+     ],
+     "process_check": "Clean line; check for loose fibres",
+     "rework_allowed": true
+    }
+   }
+  },
+  "hazelnut": {
+   "station": "Nut sorting",
+   "defects": {
+    "crack": {
+     "severity": "major",
+     "likely_causes": [
+      "drying too fast",
+      "impact in handling"
+     ],
+     "process_check": "Check dryer temperature and drop heights",
+     "rework_allowed": false
+    },
+    "cut": {
+     "severity": "major",
+     "likely_causes": [
+      "blade contact in cracker"
+     ],
+     "process_check": "Check cracker gap setting",
+     "rework_allowed": false
+    },
+    "hole": {
+     "severity": "critical",
+     "likely_causes": [
+      "insect damage"
+     ],
+     "process_check": "Quarantine lot; notify supplier QA",
+     "rework_allowed": false
+    },
+    "print": {
+     "severity": "critical",
+     "likely_causes": [
+      "foreign marking / contamination"
+     ],
+     "process_check": "Quarantine lot; investigate contamination source",
+     "rework_allowed": false
+    }
+   }
+  },
+  "leather": {
+   "station": "Leather finishing",
+   "defects": {
+    "color": {
+     "severity": "minor",
+     "likely_causes": [
+      "finish coat variation"
+     ],
+     "process_check": "Check spray finish viscosity",
+     "rework_allowed": false
+    },
+    "cut": {
+     "severity": "major",
+     "likely_causes": [
+      "knife damage"
+     ],
+     "process_check": "Inspect cutting knives",
+     "rework_allowed": false
+    },
+    "fold": {
+     "severity": "minor",
+     "likely_causes": [
+      "handling fold"
+     ],
+     "process_check": "Check stacking procedure",
+     "rework_allowed": true
+    },
+    "glue": {
+     "severity": "minor",
+     "likely_causes": [
+      "adhesive spill"
+     ],
+     "process_check": "Check glue dispenser",
+     "rework_allowed": true
+    },
+    "poke": {
+     "severity": "major",
+     "likely_causes": [
+      "sharp fixture"
+     ],
+     "process_check": "Inspect fixtures for sharp edges",
+     "rework_allowed": false
+    }
+   }
+  },
+  "metal_nut": {
+   "station": "Nut stamping + plating",
+   "defects": {
+    "bent": {
+     "severity": "critical",
+     "likely_causes": [
+      "die misalignment"
+     ],
+     "process_check": "Check stamping die alignment",
+     "rework_allowed": false
+    },
+    "color": {
+     "severity": "minor",
+     "likely_causes": [
+      "plating bath chemistry"
+     ],
+     "process_check": "Check plating bath concentration",
+     "rework_allowed": false
+    },
+    "flip": {
+     "severity": "major",
+     "likely_causes": [
+      "orientation fault at feeder"
+     ],
+     "process_check": "Check vibratory feeder orientation tooling",
+     "rework_allowed": true
+    },
+    "scratch": {
+     "severity": "minor",
+     "likely_causes": [
+      "tumbling or conveyor abrasion"
+     ],
+     "process_check": "Inspect conveyor and tumbling media",
+     "rework_allowed": false
+    }
+   }
+  },
+  "pill": {
+   "station": "Tablet press + coating",
+   "defects": {
+    "color": {
+     "severity": "major",
+     "likely_causes": [
+      "coating spray variation"
+     ],
+     "process_check": "Check coating pan spray rate",
+     "rework_allowed": false
+    },
+    "combined": {
+     "severity": "critical",
+     "likely_causes": [
+      "multiple faults"
+     ],
+     "process_check": "Stop press; full setup verification",
+     "rework_allowed": false
+    },
+    "contamination": {
+     "severity": "critical",
+     "likely_causes": [
+      "foreign particle"
+     ],
+     "process_check": "Quarantine batch; clean press",
+     "rework_allowed": false
+    },
+    "crack": {
+     "severity": "major",
+     "likely_causes": [
+      "compression force too high"
+     ],
+     "process_check": "Check main compression force",
+     "rework_allowed": false
+    },
+    "faulty_imprint": {
+     "severity": "minor",
+     "likely_causes": [
+      "punch face wear"
+     ],
+     "process_check": "Inspect embossed punch faces",
+     "rework_allowed": false
+    },
+    "pill_type": {
+     "severity": "critical",
+     "likely_causes": [
+      "product mix-up"
+     ],
+     "process_check": "Stop line; line clearance check",
+     "rework_allowed": false
+    },
+    "scratch": {
+     "severity": "minor",
+     "likely_causes": [
+      "handling abrasion"
+     ],
+     "process_check": "Inspect chutes and conveyors",
+     "rework_allowed": false
+    }
+   }
+  },
+  "screw": {
+   "station": "Screw heading + thread rolling",
+   "defects": {
+    "manipulated_front": {
+     "severity": "critical",
+     "likely_causes": [
+      "tip forming fault"
+     ],
+     "process_check": "Check pointing tool",
+     "rework_allowed": false
+    },
+    "scratch_head": {
+     "severity": "minor",
+     "likely_causes": [
+      "handling abrasion"
+     ],
+     "process_check": "Inspect feed rails",
+     "rework_allowed": false
+    },
+    "scratch_neck": {
+     "severity": "minor",
+     "likely_causes": [
+      "handling abrasion"
+     ],
+     "process_check": "Inspect transfer fingers",
+     "rework_allowed": false
+    },
+    "thread_side": {
+     "severity": "major",
+     "likely_causes": [
+      "thread rolling die wear"
+     ],
+     "process_check": "Inspect and re-shim thread rolling dies",
+     "rework_allowed": false
+    },
+    "thread_top": {
+     "severity": "major",
+     "likely_causes": [
+      "blank length or die setup"
+     ],
+     "process_check": "Check blank length and die timing",
+     "rework_allowed": false
+    }
+   }
+  },
+  "tile": {
+   "station": "Tile pressing + glazing",
+   "defects": {
+    "crack": {
+     "severity": "critical",
+     "likely_causes": [
+      "kiln thermal shock"
+     ],
+     "process_check": "Check kiln cooling curve",
+     "rework_allowed": false
+    },
+    "glue_strip": {
+     "severity": "minor",
+     "likely_causes": [
+      "adhesive residue"
+     ],
+     "process_check": "Check backing adhesive station",
+     "rework_allowed": true
+    },
+    "gray_stroke": {
+     "severity": "minor",
+     "likely_causes": [
+      "glaze line contamination"
+     ],
+     "process_check": "Clean glaze applicator",
+     "rework_allowed": false
+    },
+    "oil": {
+     "severity": "minor",
+     "likely_causes": [
+      "lubricant drip"
+     ],
+     "process_check": "Find and fix lubricant leak",
+     "rework_allowed": true
+    },
+    "rough": {
+     "severity": "major",
+     "likely_causes": [
+      "glaze thickness / firing"
+     ],
+     "process_check": "Check glaze weight and kiln profile",
+     "rework_allowed": false
+    }
+   }
+  },
+  "toothbrush": {
+   "station": "Toothbrush tufting",
+   "defects": {
+    "defective": {
+     "severity": "major",
+     "likely_causes": [
+      "tufting fault / bristle misplacement"
+     ],
+     "process_check": "Check tufting tool and filament feed",
+     "rework_allowed": false
+    }
+   }
+  },
+  "transistor": {
+   "station": "Through-hole assembly",
+   "defects": {
+    "bent_lead": {
+     "severity": "major",
+     "likely_causes": [
+      "lead forming tool"
+     ],
+     "process_check": "Check lead-forming tool",
+     "rework_allowed": true
+    },
+    "cut_lead": {
+     "severity": "critical",
+     "likely_causes": [
+      "lead cutter misadjusted"
+     ],
+     "process_check": "Check lead cutter setting",
+     "rework_allowed": false
+    },
+    "damaged_case": {
+     "severity": "critical",
+     "likely_causes": [
+      "placement force too high"
+     ],
+     "process_check": "Check placement head force",
+     "rework_allowed": false
+    },
+    "misplaced": {
+     "severity": "critical",
+     "likely_causes": [
+      "pick-and-place offset or missing part"
+     ],
+     "process_check": "Re-teach placement position; check feeder",
+     "rework_allowed": true
+    }
+   }
+  },
+  "wood": {
+   "station": "Wood panel finishing",
+   "defects": {
+    "color": {
+     "severity": "minor",
+     "likely_causes": [
+      "stain variation"
+     ],
+     "process_check": "Check stain batch",
+     "rework_allowed": false
+    },
+    "combined": {
+     "severity": "major",
+     "likely_causes": [
+      "multiple faults"
+     ],
+     "process_check": "Full station check",
+     "rework_allowed": false
+    },
+    "hole": {
+     "severity": "major",
+     "likely_causes": [
+      "knot fall-out / drill fault"
+     ],
+     "process_check": "Inspect drilling station and raw board grade",
+     "rework_allowed": true
+    },
+    "liquid": {
+     "severity": "minor",
+     "likely_causes": [
+      "spill"
+     ],
+     "process_check": "Check fluid lines near the conveyor",
+     "rework_allowed": true
+    },
+    "scratch": {
+     "severity": "minor",
+     "likely_causes": [
+      "sanding / handling"
+     ],
+     "process_check": "Check sanding belt grit and guides",
+     "rework_allowed": true
+    }
+   }
+  },
+  "zipper": {
+   "station": "Zipper chain assembly",
+   "defects": {
+    "broken_teeth": {
+     "severity": "critical",
+     "likely_causes": [
+      "teeth moulding fault"
+     ],
+     "process_check": "Check injection moulding of teeth",
+     "rework_allowed": false
+    },
+    "combined": {
+     "severity": "critical",
+     "likely_causes": [
+      "multiple faults"
+     ],
+     "process_check": "Full station check",
+     "rework_allowed": false
+    },
+    "fabric_border": {
+     "severity": "minor",
+     "likely_causes": [
+      "tape edge fray"
+     ],
+     "process_check": "Check tape slitting",
+     "rework_allowed": false
+    },
+    "fabric_interior": {
+     "severity": "minor",
+     "likely_causes": [
+      "tape weaving fault"
+     ],
+     "process_check": "Check tape weaving",
+     "rework_allowed": false
+    },
+    "rough": {
+     "severity": "minor",
+     "likely_causes": [
+      "surface finish"
+     ],
+     "process_check": "Check finishing station",
+     "rework_allowed": false
+    },
+    "split_teeth": {
+     "severity": "major",
+     "likely_causes": [
+      "chain alignment"
+     ],
+     "process_check": "Check chain alignment guides",
+     "rework_allowed": false
+    },
+    "squeezed_teeth": {
+     "severity": "major",
+     "likely_causes": [
+      "crimping pressure"
+     ],
+     "process_check": "Check crimp pressure",
+     "rework_allowed": false
+    }
+   }
+  }
+ }
+}

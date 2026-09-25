@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NanoInspect Cloud · Review Console</title>
+<style>
+  :root { --bg:#f4f5f7; --panel:#fff; --ink:#15181e; --muted:#667085; --line:#e4e7ec; --navy:#0f1b2d; --accent:#0e7490;
+          --good:#1a7f37; --bad:#cf222e; --warn:#b54708; --radius:10px; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; background:var(--bg); color:var(--ink); }
+  header { background:var(--navy); color:#fff; padding:14px 24px; display:flex; align-items:center; gap:18px; flex-wrap:wrap; }
+  header h1 { font-size:17px; margin:0; font-weight:650; letter-spacing:.2px; }
+  header .tag { font-size:12px; background:#ffffff1a; padding:3px 9px; border-radius:99px; }
+  .chips { display:flex; gap:10px; margin-left:auto; flex-wrap:wrap; }
+  .chip { background:#ffffff12; border:1px solid #ffffff22; border-radius:8px; padding:5px 10px; font-size:12px; }
+  .chip b { display:block; font-size:16px; }
+  main { display:grid; grid-template-columns: 360px 1fr; gap:16px; padding:16px 24px; max-width:1400px; margin:0 auto; }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+  .panel { background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); }
+  .panel h2 { font-size:13px; text-transform:uppercase; letter-spacing:.6px; color:var(--muted); margin:0; padding:12px 14px; border-bottom:1px solid var(--line); }
+  .queue { max-height: calc(100vh - 150px); overflow:auto; }
+  .item { display:flex; gap:10px; padding:10px 12px; border-bottom:1px solid var(--line); cursor:pointer; }
+  .item:hover { background:#f9fafb; } .item.sel { background:#ecfdff; box-shadow: inset 3px 0 0 var(--accent); }
+  .item img { width:64px; height:64px; object-fit:cover; border-radius:6px; background:#ddd; }
+  .item .meta { font-size:12px; color:var(--muted); } .item .cat { font-weight:600; }
+  .empty { padding:30px; text-align:center; color:var(--muted); }
+  .detail { padding:18px; display:grid; grid-template-columns: 320px 1fr; gap:22px; }
+  @media (max-width: 1100px) { .detail { grid-template-columns: 1fr; } }
+  .detail img { width:100%; border-radius:8px; border:1px solid var(--line); image-rendering:auto; }
+  .kv { display:grid; grid-template-columns: 150px 1fr; gap:6px 12px; font-size:13px; }
+  .kv div:nth-child(odd) { color:var(--muted); }
+  .bar { position:relative; height:10px; border-radius:6px; background:linear-gradient(90deg,#d1fadf 0%,#fef0c7 50%,#fee4e2 100%); margin:6px 0 2px; }
+  .bar i { position:absolute; top:-4px; width:3px; height:18px; background:var(--ink); border-radius:2px; }
+  .bar u { position:absolute; top:-2px; width:1px; height:14px; background:#98a2b3; }
+  .why { background:#fffaeb; border:1px solid #fedf89; border-radius:8px; padding:10px 12px; margin:12px 0; font-size:13px; }
+  .actions { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:16px; }
+  button { font:inherit; border:0; border-radius:8px; padding:10px 16px; cursor:pointer; font-weight:600; }
+  .btn-good { background:var(--good); color:#fff; } .btn-bad { background:var(--bad); color:#fff; }
+  select, input { font:inherit; padding:8px 10px; border:1px solid var(--line); border-radius:8px; }
+  .kbd { font-size:11px; opacity:.8; margin-left:6px; border:1px solid #ffffff66; border-radius:4px; padding:0 4px; }
+  .lib { padding:12px 14px; display:flex; flex-wrap:wrap; gap:6px; }
+  .lib span { background:#f2f4f7; border-radius:99px; padding:3px 10px; font-size:12px; }
+  table { width:100%; border-collapse:collapse; font-size:12px; } td,th { text-align:left; padding:6px 10px; border-bottom:1px solid var(--line); }
+  .pill { padding:2px 8px; border-radius:99px; font-size:11px; font-weight:600; }
+  .pill.good { background:#d1fadf; color:var(--good); } .pill.defective { background:#fee4e2; color:var(--bad); }
+  .note { font-size:12px; color:var(--muted); padding:8px 14px 14px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>NanoInspect Cloud</h1><span class="tag">Escalation tier · human review · no AI inference</span>
+  <div class="chips" id="chips"></div>
+</header>
+<main>
+  <section class="panel">
+    <h2>Pending review</h2>
+    <div class="queue" id="queue"><div class="empty">Waiting for escalations from edge sites…</div></div>
+  </section>
+  <section style="display:flex;flex-direction:column;gap:16px">
+    <div class="panel"><h2>Case</h2><div id="detail" class="empty">Select a case on the left.</div></div>
+    <div class="panel"><h2>Fleet defect library (confirmed by reviewers)</h2><div class="lib" id="lib"></div>
+      <div class="note">Confirmed labels flow back to the edge site that sent them and become training data for its next on-device fine-tune.</div></div>
+    <div class="panel"><h2>Recently reviewed</h2><div style="overflow:auto"><table id="done"></table></div></div>
+  </section>
+</main>
+<script>
+const $ = s => document.querySelector(s);
+let items = [], sel = null, reviewer = localStorage.getItem("reviewer") || "QC reviewer";
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const ago = t => { const s = Math.max(0, Date.now()/1000 - t); return s < 60 ? `${s|0}s ago` : s < 3600 ? `${(s/60)|0}m ago` : `${(s/3600)|0}h ago`; };
+const BUCKET = {agree_good:"Both tiers: good", agree_defect:"Both tiers: defect", t1_flag_t2_good:"Tier 1 flags · tier 2 says good",
+  t1_good_t2_defect:"Tier 1 good · tier 2 sees defect", t2_unusable:"Tier 2 answer unusable", input_ood:"Image unlike training data", unreadable:"Unreadable image", manual:"Operator escalated"};
+
+async function refresh() {
+  try {
+    const [q, f, d] = await Promise.all([fetch("/api/queue").then(r=>r.json()), fetch("/api/fleet").then(r=>r.json()),
+                                         fetch("/api/queue?status=reviewed&limit=15").then(r=>r.json())]);
+    items = q; renderQueue(); renderFleet(f); renderDone(d);
+    if (sel && !items.find(i => i.id === sel)) { sel = null; renderDetail(); }
+    if (!sel && items.length) { sel = items[items.length - 1].id; renderDetail(); }
+  } catch (e) { $("#chips").innerHTML = `<div class="chip">Cloud API unreachable</div>`; }
+}
+function renderQueue() {
+  $("#queue").innerHTML = items.length ? items.slice().reverse().map(i => `
+    <div class="item ${i.id===sel?'sel':''}" onclick="pick('${i.id}')">
+      <img src="/api/roi/${i.id}" alt="">
+      <div><div class="cat">${esc(i.category)}</div>
+        <div class="meta">${esc(BUCKET[i.bucket] || i.bucket)}</div>
+        <div class="meta">${esc(i.site)} · ${ago(i.received)} · ${(i.roi_bytes/1024).toFixed(1)} KB</div></div>
+    </div>`).join("") : `<div class="empty">Queue is empty. Nothing needs a human right now.</div>`;
+}
+function pick(id) { sel = id; renderQueue(); renderDetail(); }
+function renderDetail() {
+  const i = items.find(x => x.id === sel);
+  if (!i) { $("#detail").className = "empty"; $("#detail").innerHTML = "Select a case on the left."; return; }
+  const types = (i.defect_types || "").split(",").filter(Boolean);
+  const s = Math.min(1, Math.max(0, i.vision_score ?? 0));
+  $("#detail").className = "detail";
+  $("#detail").innerHTML = `
+    <div><img src="/api/roi/${i.id}" alt="region of interest">
+      <div class="note" style="padding:6px 0">Only this crop around the suspect region left the factory (${(i.roi_bytes/1024).toFixed(1)} KB). The full image stays on the edge device.</div></div>
+    <div>
+      <div class="kv">
+        <div>Product</div><div><b>${esc(i.category)}</b></div>
+        <div>Site</div><div>${esc(i.site)}</div>
+        <div>Escalated</div><div>${new Date(i.created*1000).toLocaleTimeString()} (${ago(i.created)})</div>
+        <div>Tier 1 P(defect)</div><div>${(i.vision_score ?? 0).toFixed(3)}
+          <div class="bar"><u style="left:${(i.review_at*100).toFixed(1)}%"></u><i style="left:calc(${(s*100).toFixed(1)}% - 1px)"></i></div>
+          <span class="note" style="padding:0">tier-1 fast-accept threshold ${(+i.review_at).toFixed(2)}</span></div>
+        <div>Tier 2 (27B)</div><div>${esc(i.vlm_verdict ?? "n/a")}${i.vlm_type && i.vlm_type!=="none" ? ` · ${esc(i.vlm_type)} @ ${esc(i.vlm_location)}` : ""}</div>
+      </div>
+      <div class="why"><b>Why this came to you:</b> ${esc(i.reason)}</div>
+      <div class="actions">
+        <button class="btn-good" onclick="decide('good')">Good · release <span class="kbd">G</span></button>
+        <select id="dtype">${types.map(t => `<option ${t===i.vlm_type?'selected':''}>${esc(t)}</option>`).join("")}<option>other</option></select>
+        <button class="btn-bad" onclick="decide('defective')">Defective · reject <span class="kbd">D</span></button>
+        <input id="rev" value="${esc(reviewer)}" size="12" title="reviewer name">
+      </div>
+    </div>`;
+}
+async function decide(v) {
+  if (!sel) return;
+  reviewer = $("#rev").value || reviewer; localStorage.setItem("reviewer", reviewer);
+  await fetch(`/api/review/${sel}`, {method:"POST", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({verdict:v, defect_type: v==="defective" ? $("#dtype").value : null, reviewer})});
+  sel = null; refresh();
+}
+function renderFleet(f) {
+  const pend = f.sites.reduce((a,s)=>a+(s.pending||0),0), kb = f.sites.reduce((a,s)=>a+(s.bytes||0),0)/1024;
+  $("#chips").innerHTML = [["Pending", pend], ["Reviewed", f.reviewed], ["Edge sites", f.sites.length],
+    ["Median time to review", f.median_minutes_to_review==null ? "–" : `${f.median_minutes_to_review.toFixed(1)} min`],
+    ["VLM agrees with human", f.vlm_agreement_with_human==null ? "–" : `${(f.vlm_agreement_with_human*100).toFixed(0)}%`],
+    ["Data received", `${kb.toFixed(0)} KB`]].map(([k,v]) => `<div class="chip">${k}<b>${v}</b></div>`).join("");
+  const lib = Object.entries(f.defect_library);
+  $("#lib").innerHTML = lib.length ? lib.map(([k,n]) => `<span>${esc(k)} · ${n}</span>`).join("") : `<span>No confirmed defects yet</span>`;
+}
+function renderDone(d) {
+  $("#done").innerHTML = `<tr><th>Product</th><th>Site</th><th>Edge VLM</th><th>Human</th><th>Type</th><th>Reviewer</th><th>When</th></tr>` +
+    d.map(r => `<tr><td>${esc(r.category)}</td><td>${esc(r.site)}</td><td>${esc(r.vlm_verdict)}</td>
+      <td><span class="pill ${r.verdict}">${esc(r.verdict)}</span></td><td>${esc(r.defect_type||"")}</td><td>${esc(r.reviewer)}</td><td>${ago(r.reviewed_at)}</td></tr>`).join("");
+}
+document.addEventListener("keydown", e => { if (e.target.tagName === "INPUT") return;
+  if (e.key === "g" || e.key === "G") decide("good"); if (e.key === "d" || e.key === "D") decide("defective"); });
+refresh(); setInterval(refresh, 2000);
+</script>
+</body>
+</html>

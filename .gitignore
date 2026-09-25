@@ -1,0 +1,16 @@
+.venv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+artifacts/cache/
+artifacts/edge.db
+artifacts/failure_inputs/
+artifacts/models/vlm_lora/*.safetensors
+cloud/cloud.db
+previous_run_bottle_only/*.pt
+# hackathon handout photos contain device credentials: never publish
+guide/
+# model weights are published separately (GitHub release / Hugging Face), too large for git
+artifacts/models/
+artifacts/logs/
+_dryrun.ipynb

@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NanoInspect · Edge Quality Inspection</title>
+<link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+<aside class="side">
+  <div class="brand"><div class="logo">◆</div><div><b>NanoInspect</b><small>Edge-first visual QC</small></div></div>
+  <div class="site" id="site">—</div>
+  <nav>
+    <a data-view="overview" class="on">Overview</a>
+    <a data-view="inspect">Inspect a part</a>
+    <a data-view="line">Production line</a>
+    <a data-view="escalations">Cloud escalations</a>
+    <a data-view="models">Models &amp; serving</a>
+    <a data-view="policy">Escalation policy &amp; cost</a>
+    <a data-view="evidence">Evidence &amp; benchmarks</a>
+  </nav>
+  <div class="side-foot">
+    <div class="dev" id="dev">HP ZGX Nano · GB10</div>
+    <div class="muted small">Primary inference runs on this device. Only escalated cases reach the cloud.</div>
+  </div>
+</aside>
+
+<div class="main">
+  <header class="top">
+    <div class="status" id="st-vlm"></div>
+    <div class="status" id="st-sync"></div>
+    <label class="switch" title="Simulate a network outage">
+      <input type="checkbox" id="net" checked><span></span><em id="net-label">Network online</em>
+    </label>
+  </header>
+
+  <!-- OVERVIEW -->
+  <section class="view" id="v-overview">
+    <div class="hero">
+      <div>
+        <h1>Every part inspected on the line. Only the hard cases leave the building.</h1>
+        <p class="muted">A small vision-language model, fine-tuned on this device, checks every part. A 27B model on the same device double-checks anything it is not sure about against a known-good reference. A person in the cloud sees only the cases where a wrong automatic decision would cost more than their review.</p>
+      </div>
+      <button class="primary" id="hero-start">Start demo line</button>
+    </div>
+    <div class="kpis" id="kpis"></div>
+    <div class="grid2">
+      <div class="card"><h3>Decision cascade <span class="muted small">(live)</span></h3><div id="funnel"></div></div>
+      <div class="card"><h3>Edge device</h3><div id="devpanel"></div></div>
+    </div>
+    <div class="card" id="savings-card"><h3>Cloud vs edge: tokens, API cost, energy and time <span class="muted small">(every model call runs on this Nano; this is what a cloud vision API would have cost)</span></h3>
+      <div class="grid2"><div id="savings-live"></div><div id="savings-proj"></div></div>
+      <details class="rates"><summary class="small">Rates and assumptions</summary>
+        <div class="controls">
+          <label>Cloud input $ / 1M tokens<input type="number" id="r-in" step="0.05"></label>
+          <label>Cloud output $ / 1M tokens<input type="number" id="r-out" step="0.1"></label>
+          <label>Electricity $ / kWh<input type="number" id="r-kwh" step="0.01"></label>
+          <label>Uplink Mbit/s<input type="number" id="r-up" step="1"></label>
+          <label>Cloud round-trip s / call<input type="number" id="r-rtt" step="0.1"></label>
+          <label>Parts / minute<input type="number" id="r-ppm" step="5"></label>
+          <label>Hours / day<input type="number" id="r-h" step="1"></label>
+          <button class="primary" id="r-apply">Apply</button></div>
+        <div class="muted small" id="rates-note"></div></details></div>
+    <div class="card"><h3>Latest decisions</h3><div class="feed" id="feed"></div></div>
+  </section>
+
+  <!-- INSPECT -->
+  <section class="view" id="v-inspect" hidden>
+    <div class="grid-inspect">
+      <div class="card">
+        <h3>1 · Choose the product</h3>
+        <select id="cat"></select>
+        <h3>2 · Provide an image</h3>
+        <div class="drop" id="drop"><input type="file" id="file" accept="image/*" hidden>
+          <b>Drop a photo here</b> or <a id="browse">browse</a><div class="muted small">PNG / JPG — processed on this device</div></div>
+        <div id="pending" class="pending" hidden><img id="pending-img" alt="">
+          <div><div class="small"><b>Image added:</b> <span id="pending-name"></span></div>
+            <div class="small muted" id="pending-meta"></div>
+            <div class="row"><button class="primary" id="submit">Submit for inspection</button><button id="clear">Remove</button></div></div></div>
+        <div class="row">
+          <button id="cam-on">Use camera</button>
+          <button id="sample-good">Random good part</button>
+          <button id="sample-bad">Random defective part</button>
+        </div>
+        <div id="cam" hidden><video id="video" autoplay playsinline muted></video>
+          <div class="row"><button class="primary" id="snap">Capture &amp; inspect</button><button id="cam-off">Close camera</button></div></div>
+        <label class="check"><input type="checkbox" id="force"> Always ask tier 2 as well (skip the tier-1 fast accept)</label>
+        <p class="muted small">Camera tip: the models know the 15 MVTec product families. Use a plain background. Anything unfamiliar is escalated, not guessed.</p>
+      </div>
+      <div>
+        <div class="card" id="result"><div class="placeholder">The inspection result will appear here.</div></div>
+        <div class="card" id="chat" hidden><h3>Ask the tier-2 model about this part</h3>
+          <div id="chat-log" class="chat-log"></div>
+          <div class="row"><input id="chat-q" class="chat-in" placeholder="e.g. Why is this defective? Could it be lighting?"><button class="primary" id="chat-send">Ask</button></div>
+          <div class="muted small">Answered on the Nano by Qwen3.8-27B. The image does not leave the device.</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LINE -->
+  <section class="view" id="v-line" hidden>
+    <div class="card">
+      <div class="controls">
+        <label>Line speed <b id="ppm-v">240</b> parts/min<input type="range" id="ppm" min="30" max="3000" step="30" value="240"></label>
+        <label>Defect rate <b id="dr-v">5</b>%<input type="range" id="dr" min="0" max="50" step="1" value="5"></label>
+        <button class="primary" id="line-start">Start line</button><button id="line-stop">Stop</button>
+      </div>
+      <div class="kpis small" id="line-kpis"></div>
+    </div>
+    <div class="grid2">
+      <div class="card"><h3>Throughput and queues</h3><div id="line-chart"></div></div>
+      <div class="card"><h3>Last part checked by tier 2</h3><div id="line-last"></div></div>
+    </div>
+    <div class="card"><h3>Line controller: machine instructions (SOP-grounded JSON, as sent to the PLC / MES)</h3><div id="controller"></div></div>
+    <div class="card"><h3>Parts on the line</h3><div class="stream" id="stream"></div></div>
+  </section>
+
+  <!-- ESCALATIONS -->
+  <section class="view" id="v-escalations" hidden>
+    <div class="grid2">
+      <div class="card"><h3>Store-and-forward outbox</h3><div id="outbox"></div></div>
+      <div class="card"><h3>What leaves the building</h3><div id="privacy"></div></div>
+    </div>
+    <div class="card"><h3>Escalated cases <a class="small" id="cloud-link" target="_blank">open cloud review console ↗</a></h3>
+      <div class="table-wrap"><table id="esc-table"></table></div></div>
+  </section>
+
+  <!-- MODELS -->
+  <section class="view" id="v-models" hidden>
+    <div class="grid2" id="model-cards"></div>
+    <div class="card"><h3>Model quality on held-out images (same 1,096 images for every model)</h3><div class="table-wrap"><table id="quality"></table></div>
+      <p class="muted small">ROC-AUC uses the model's probability of "defective", read from the verdict token's log-probabilities. Baselines are shown for comparison: a classical ResNet-18 classifier (not an LLM) and the zero-shot models without our fine-tuning.</p></div>
+    <div class="card"><h3>Serving performance on the Nano (vLLM)</h3><div class="table-wrap"><table id="servebench"></table></div></div>
+  </section>
+
+  <!-- POLICY -->
+  <section class="view" id="v-policy" hidden>
+    <div class="card">
+      <h3>When does a part go to a human in the cloud?</h3>
+      <p class="muted">After both edge models have looked at a part, it lands in one <b>evidence bucket</b>. We measured how often each bucket happens for defective and for good parts on held-out data. With your line's defect rate, Bayes' rule gives the probability that a part in that bucket is defective. A part is escalated <b>only if the cheaper automatic decision still costs more than a human review</b>.</p>
+      <div class="controls">
+        <label>Cost of an escaped defect ($)<input type="number" id="c-esc" step="1"></label>
+        <label>Cost of scrapping a good part ($)<input type="number" id="c-fr" step="0.5"></label>
+        <label>Cost of one human review ($)<input type="number" id="c-hr" step="0.05"></label>
+        <label>Line defect rate (%)<input type="number" id="c-dr" step="0.5"></label>
+        <label>Audit sample of accepted parts (%)<input type="number" id="c-ar" step="1"></label>
+        <label>Send to cloud<select id="c-pv"><option value="roi">Suspect-region crop only</option><option value="full">Full image</option></select></label>
+        <button class="primary" id="apply">Apply policy</button>
+      </div>
+    </div>
+    <div class="card"><h3>Policy table (applied live to the line and to uploads)</h3><div class="table-wrap"><table id="pol-table"></table></div></div>
+    <div class="card"><h3>Cost per 1,000 parts on held-out data</h3><div id="pol-sim"></div>
+      <p class="muted small">Simulated on evaluation images the models never trained on, reweighted to your defect rate. Human review is assumed correct.</p></div>
+  </section>
+
+  <!-- EVIDENCE -->
+  <section class="view" id="v-evidence" hidden>
+    <div class="kpis" id="ev-kpis"></div>
+    <div class="gallery" id="gallery"></div>
+  </section>
+</div>
+<script src="/static/app.js"></script>
+</body>
+</html>

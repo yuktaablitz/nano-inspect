@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NanoInspect · Pitch</title>
+<style>
+  :root { --navy:#0b1526; --ink:#0f172a; --muted:#64748b; --accent:#0e7490; --t2:#7c3aed; --t3:#c2410c; --good:#15803d; --bad:#b91c1c; --line:#e2e8f0; }
+  * { box-sizing:border-box; }
+  html,body { margin:0; height:100%; background:var(--navy); font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; color:var(--ink); }
+  .deck { height:100%; display:grid; place-items:center; padding:2vmin; }
+  .slide { display:none; width:min(1280px,96vw); aspect-ratio:16/9; background:#fff; border-radius:18px; padding:4.2% 5%; position:relative; overflow:hidden; }
+  .slide.on { display:flex; flex-direction:column; animation:in .35s ease; }
+  @keyframes in { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+  .slide.dark { background:linear-gradient(125deg,#0b1526,#123a52); color:#e2e8f0; }
+  h1 { font-size:clamp(28px,4.2vw,56px); line-height:1.08; margin:0 0 .4em; letter-spacing:-.8px; }
+  h2 { font-size:clamp(22px,2.6vw,36px); margin:0 0 .5em; letter-spacing:-.4px; }
+  .kicker { text-transform:uppercase; letter-spacing:1.5px; font-size:clamp(11px,1vw,14px); color:var(--accent); font-weight:700; margin-bottom:.8em; }
+  .dark .kicker { color:#67e8f9; }
+  p, li { font-size:clamp(14px,1.45vw,21px); line-height:1.45; }
+  .muted { color:var(--muted); } .dark .muted { color:#a5b4c8; }
+  .grid { display:grid; gap:2.2%; flex:1; min-height:0; }
+  .g2 { grid-template-columns:1fr 1fr; } .g3 { grid-template-columns:repeat(3,1fr); } .g4 { grid-template-columns:repeat(4,1fr); }
+  .box { border:1px solid var(--line); border-radius:14px; padding:4% 5%; }
+  .dark .box { border-color:#ffffff22; background:#ffffff08; }
+  .big { font-size:clamp(26px,3.6vw,52px); font-weight:800; letter-spacing:-1px; line-height:1.05; }
+  .big small { font-size:.4em; font-weight:600; color:var(--muted); letter-spacing:0; display:block; margin-top:.3em; }
+  .foot { position:absolute; bottom:2.2%; left:5%; right:5%; display:flex; justify-content:space-between; font-size:12px; color:var(--muted); }
+  .bar { display:grid; grid-template-columns: 34% 1fr 16%; gap:10px; align-items:center; margin:1.1em 0; font-size:clamp(12px,1.25vw,18px); }
+  .bar .t { background:#f1f5f9; border-radius:8px; height:1.6em; overflow:hidden; }
+  .bar .f { height:100%; background:#94a3b8; border-radius:8px; transition:width .8s; } .bar.me .f { background:var(--accent); } .bar.me { font-weight:700; }
+  table { border-collapse:collapse; width:100%; font-size:clamp(12px,1.2vw,17px); }
+  td, th { padding:.45em .6em; border-bottom:1px solid var(--line); text-align:left; } th { color:var(--muted); font-weight:600; }
+  .pill { padding:.15em .6em; border-radius:99px; font-weight:700; font-size:.85em; }
+  .pill.accept { background:#dcfce7; color:var(--good); } .pill.reject { background:#fee2e2; color:var(--bad); } .pill.escalate_to_human { background:#fef3c7; color:#a16207; }
+  .tiers { display:grid; grid-template-columns:repeat(3,1fr); gap:2%; margin-top:1em; }
+  .tier { border-radius:14px; padding:5%; color:#fff; } .tier b { font-size:1.2em; display:block; }
+  .nav { position:fixed; bottom:14px; right:18px; color:#94a3b8; font-size:12px; }
+  a.btn { display:inline-block; background:var(--accent); color:#fff; padding:.6em 1.1em; border-radius:10px; text-decoration:none; font-weight:700; margin:.3em .4em 0 0; font-size:clamp(12px,1.2vw,17px); }
+  img.arch { width:100%; height:100%; object-fit:contain; }
+  .formula { font-family:ui-monospace,Menlo,monospace; background:#f8fafc; border:1px solid var(--line); border-radius:10px; padding:.8em 1em; font-size:clamp(13px,1.35vw,19px); margin:.6em 0; }
+</style>
+</head>
+<body>
+<div class="deck" id="deck">
+
+<section class="slide dark on">
+  <div class="kicker">HP Edge AI SJSUHack · runs on one HP ZGX Nano</div>
+  <h1>NanoInspect</h1>
+  <p style="font-size:clamp(20px,2.4vw,34px);max-width:80%">Every part inspected on the line.<br>Only the hard cases leave the building.</p>
+  <p class="muted" style="margin-top:auto">Edge-first visual quality control: a vision model on every part, a fine-tuned vision-language model on the Nano for anything suspicious, and a person in the cloud only when that is cheaper than the risk.</p>
+  <div class="foot"><span id="team">Team NanoInspect</span><span>→ to advance</span></div>
+</section>
+
+<section class="slide">
+  <div class="kicker">Target user</div>
+  <h2>A QC line supervisor has one second per part to decide: ship, scrap, or check again.</h2>
+  <div class="grid g4" style="margin-top:1em">
+    <div class="box"><b>Latency budget</b><p class="muted">60 parts/min leaves 1 s per part, including any network round-trip.</p></div>
+    <div class="box"><b>No connectivity</b><p class="muted">If the WAN drops, a cloud-dependent line stops or ships uninspected parts.</p></div>
+    <div class="box"><b>Data residency</b><p class="muted">Product images are designs and process data. Sending all of them off-site is a governance problem.</p></div>
+    <div class="box"><b>Cost per part</b><p class="muted">Cloud AI and human inspection both scale with every part, even the obviously good ones.</p></div>
+  </div>
+  <p class="muted">And a new product line has hundreds of good images, but only a handful of defective ones to train on.</p>
+</section>
+
+<section class="slide">
+  <div class="kicker">The third path</div>
+  <h2>Three tiers. Each is more expensive and sees fewer parts.</h2>
+  <div class="tiers">
+    <div class="tier" style="background:var(--accent)"><b>Tier 1 · cheap LLM</b>Qwen2.5-VL-7B + LoRA, fine-tuned on the Nano<br>every part · verdict, defect type, location</div>
+    <div class="tier" style="background:var(--t2)"><b>Tier 2 · expensive LLM</b>Qwen3.8-27B NVFP4, verified for DGX Spark<br>parts tier 1 is unsure about + 5% audit · compares with a known-good reference</div>
+    <div class="tier" style="background:var(--t3)"><b>Tier 3 · cloud human</b>only when review is cheaper than the expected cost of a wrong automatic decision</div>
+  </div>
+  <p>Both LLMs are served by vLLM on the Nano. Only a small crop of an escalated part leaves the plant. The Nano keeps an outbox, so a network outage delays escalations but never stops the line. Human labels come back as training data.</p>
+</section>
+
+<section class="slide">
+  <div class="kicker">Architecture</div>
+  <div style="flex:1;min-height:0"><img class="arch" src="/docs/architecture.svg" alt="NanoInspect architecture"></div>
+</section>
+
+<section class="slide">
+  <div class="kicker">The escalation decision: explicit, defensible, measurable</div>
+  <h2>Escalate only when a human review costs less than the risk.</h2>
+  <div class="formula">escalate ⇔ min( P(defect | evidence) × $escape , P(good | evidence) × $scrap ) &gt; $human review</div>
+  <p class="muted" style="margin:.2em 0 .6em">P(defect | evidence) comes from Bayes' rule, using error rates measured on held-out parts and the line's own defect rate. The costs are the business's own numbers.</p>
+  <div style="flex:1;min-height:0;overflow:auto"><table id="poltable"></table></div>
+</section>
+
+<section class="slide">
+  <div class="kicker">Evidence · model quality on 1,096 held-out images</div>
+  <h2>Fine-tuning on the Nano turns a 7B model into a specialist</h2>
+  <div style="flex:1;min-height:0;overflow:auto"><table id="quality"></table></div>
+  <p class="muted">ROC-AUC uses each model's P(defective) from the verdict token's log-probabilities. Baselines: the same 7B without fine-tuning, the 27B model alone, and a classical ResNet-18 classifier (not an LLM).</p>
+</section>
+
+<section class="slide">
+  <div class="kicker">Evidence · serving on the Nano</div>
+  <h2>Two LLMs served side by side with vLLM</h2>
+  <div class="grid g3" id="vlm"></div>
+  <p class="muted" id="ftnote"></p>
+</section>
+
+<section class="slide">
+  <div class="kicker">Evidence · the Nano under load</div>
+  <h2>Sustained, offline, and fail-safe</h2>
+  <div class="grid g4" id="stress"></div>
+</section>
+
+<section class="slide">
+  <div class="kicker">Impact · cost per 1,000 parts on held-out data</div>
+  <h2 id="impact-h">Cheaper than inspecting every part by hand, and safer than vision alone</h2>
+  <div id="costbars" style="flex:1"></div>
+  <p class="muted" id="impact-note"></p>
+</section>
+
+<section class="slide">
+  <div class="kicker">How visual QC is done today</div>
+  <h2>People and samples, or images sent off-site</h2>
+  <table>
+    <tr><th>Today</th><th>How</th><th>Problem for a new product</th></tr>
+    <tr><td>Human inspectors</td><td>look at every part or a sample</td><td>Sandia study: 85% of defects caught, 35% of good parts rejected; industry average ≈ 80% (See, 2015)</td></tr>
+    <tr><td>AQL sampling (ISO 2859-1, ANSI/ASQ Z1.4)</td><td>e.g. 4,000-part lot → inspect 200, accept if ≤ 10 defects</td><td>most parts are never inspected</td></tr>
+    <tr><td>Rule-based machine vision</td><td>hand-tuned thresholds per product</td><td>needs a vision engineer per product; brittle</td></tr>
+    <tr><td>Cloud AI inspection</td><td>upload every image</td><td>designs leave the plant; WAN and vendor dependency (Lookout for Vision discontinued in 2025)</td></tr>
+  </table>
+  <p><b>NanoInspect:</b> every part checked by an LLM fine-tuned on this device, a second LLM for doubtful parts, a person only when it pays, and nothing leaves the building otherwise.</p>
+</section>
+
+<section class="slide">
+  <div class="kicker">After the verdict: SOP-grounded machine instruction</div>
+  <div class="grid g2">
+    <div><h2>A reject becomes an action the line can execute</h2>
+      <ul><li><b>SOP</b> (ISO 9001 §8.7, versioned per product and defect type) decides the disposition, the containment and the process check.</li>
+        <li><b>Tier 2</b> writes the nonconformance report from what it sees, and may only pick a cause the SOP lists.</li>
+        <li><b>JSON</b>, schema-validated, goes to the PLC / MES: divert to the reject or hold bin, or <i>stop the line</i> when a defect repeats.</li>
+        <li><b>The delta map</b> (patch distance to 40 good parts) shows where the part differs, and crops what goes to the cloud.</li></ul></div>
+    <pre id="mjson" style="font-size:clamp(9px,.9vw,13px);background:#0b1526;color:#e2e8f0;border-radius:12px;padding:1em;overflow:auto;margin:0"></pre>
+  </div>
+</section>
+
+<section class="slide">
+  <div class="kicker">What already exists, and what is new</div>
+  <table>
+    <tr><th>Existing</th><th>Limitation for our user</th></tr>
+    <tr><td>Cloud inspection services (Amazon Lookout for Vision, discontinued Oct 31, 2025)</td><td>Every image leaves the plant; the line depends on one vendor's service</td></tr>
+    <tr><td>Commercial platforms (LandingLens, Instrumental)</td><td>Closed; escalation is not an explicit, auditable cost rule</td></tr>
+    <tr><td>Anomalib (open-source, edge)</td><td>Anomaly scores only: no explanation, no decision policy, no human loop</td></tr>
+    <tr><td>VLM research (AnomalyR1, IADGPT)</td><td>Accuracy-focused; does not say when a human should be involved</td></tr>
+  </table>
+  <p><b>New:</b> escalation as a priced, measured decision · two independent edge models as the escalation signal · crops only, store-and-forward · human labels close the loop into on-device LoRA fine-tuning.</p>
+</section>
+
+<section class="slide dark">
+  <div class="kicker">Live demo · on the ZGX Nano</div>
+  <h2>Watch a part take each path, then pull the network.</h2>
+  <div><a class="btn" href="/">Operator console</a><a class="btn" href="/#inspect">Inspect a part</a>
+    <a class="btn" id="cloudbtn" href="#">Cloud review console</a></div>
+  <ol>
+    <li>A good part is accepted at tier 1 in milliseconds.</li>
+    <li>A defective part: the fine-tuned VLM names the defect and its location.</li>
+    <li>Change the escape cost and watch the escalation table change.</li>
+    <li>Run the line, switch the network off: inspection continues and escalations queue locally.</li>
+    <li>Network back on: crops arrive in the cloud, a reviewer labels one, and the label returns to the Nano.</li>
+  </ol>
+</section>
+
+<section class="slide">
+  <div class="kicker">Honest limits and next steps</div>
+  <div class="grid g2">
+    <div class="box"><b>Limits</b><ul class="muted">
+      <li>MVTec AD is a benchmark, not our line. Production needs a few images from the real camera.</li>
+      <li>Cost inputs are assumptions a customer would replace with its own.</li>
+      <li>The cloud tier is a reference service; in the demo it runs on our own machine.</li>
+      <li>The SOP file is written for the demo products; a plant exports its own from its quality system.</li></ul></div>
+    <div class="box"><b>Next</b><ul class="muted">
+      <li>Nightly on-device LoRA refresh from reviewer labels.</li>
+      <li>Serve the VLM with vLLM in NVFP4 for more parts per second.</li>
+      <li>One Nano per line; fleet view across plants.</li></ul></div>
+  </div>
+  <p style="margin-top:auto"><b>NanoInspect</b> · Every part inspected on the line. Only the hard cases leave the building.</p>
+</section>
+
+</div>
+<div class="nav" id="nav"></div>
+<script>
+const S = [...document.querySelectorAll(".slide")]; let i = 0;
+const go = n => { S[i].classList.remove("on"); i = Math.max(0, Math.min(S.length - 1, n)); S[i].classList.add("on"); document.getElementById("nav").textContent = `${i + 1} / ${S.length} · ← →`; };
+document.addEventListener("keydown", e => { if (["ArrowRight", " ", "PageDown"].includes(e.key)) go(i + 1); if (["ArrowLeft", "PageUp"].includes(e.key)) go(i - 1); });
+document.getElementById("deck").addEventListener("click", e => { if (e.target.closest("a")) return; go(e.clientX > innerWidth / 2 ? i + 1 : i - 1); });
+go(0);
+const pct = (x, d = 1) => x == null ? "–" : `${(x * 100).toFixed(d)}%`;
+const BUCKET = { fast_accept: "Vision model: good (tier 1)", agree_good: "Both models: good", agree_defect: "Both models: defect",
+  vision_flag_vlm_good: "Vision flags · VLM says good", vision_good_vlm_defect: "Vision good · VLM sees defect", vlm_unusable: "VLM answer unusable" };
+
+async function data() {
+  if (window.SNAPSHOT) return window.SNAPSHOT;
+  const [b, p, s, m] = await Promise.all(["/api/benchmarks", "/api/policy", "/api/policy/simulate", "/api/meta"].map(u => fetch(u).then(r => r.json()).catch(() => null)));
+  return { bench: b?.summary || {}, policy: p, sim: s, meta: m };
+}
+fetch("/results/example_machine_instruction.json").then(r => r.json()).then(j => document.getElementById("mjson").textContent = JSON.stringify(j, null, 1)).catch(() => {});
+data().then(({ bench: B, policy: P, sim, meta }) => {
+  if (meta?.cloud_url) document.getElementById("cloudbtn").href = meta.cloud_url.replace("127.0.0.1", location.hostname);
+  const Q = B.model_quality || [];
+  if (Q.length) document.getElementById("quality").innerHTML = `<tr><th>Model</th><th>ROC-AUC</th><th>Defect recall</th><th>False-positive rate</th><th>Right defect type</th><th>Right location</th></tr>` +
+    Q.map(r => `<tr${r.config.startsWith("Tier") ? ' style="font-weight:700"' : ""}><td>${r.config}</td><td>${r.roc_auc?.toFixed(3) ?? "–"}</td><td>${pct(r.recall, 0)}</td><td>${pct(r.false_positive_rate, 1)}</td><td>${pct(r.defect_type_acc, 0)}</td><td>${pct(r.location_acc, 0)}</td></tr>`).join("");
+  const f = B.tier1_finetune || {}, sv = B.serving || {};
+  const best = a => (a || []).reduce((m, r) => (!m || r.requests_per_s > m.requests_per_s) ? r : m, null);
+  const b1 = best(sv.tier1), b2 = best(sv.tier2);
+  if (b1 && b2) document.getElementById("vlm").innerHTML = [
+    ["Tier 1 throughput", `${b1.requests_per_s} img/s`, `${b1.concurrency} concurrent clients · p95 ${b1.p95_latency_s} s`],
+    ["Tier 2 throughput", `${b2.requests_per_s} img/s`, `${b2.concurrency} concurrent clients · p95 ${b2.p95_latency_s} s`],
+    ["On-device fine-tune", f.train_seconds ? `${Math.round(f.train_seconds / 60)} min` : "–", f.trainable_pct ? `LoRA on ${f.trainable_pct}% of the 7B model's weights` : ""],
+  ].map(([k, v, s]) => `<div class="box"><div class="muted">${k}</div><div class="big">${v}<small>${s}</small></div></div>`).join("");
+  document.getElementById("ftnote").textContent = "Tier 1 serves the base model and the NanoInspect LoRA adapter from one vLLM process; tier 2 uses the vLLM recipe flags for DGX Spark (NVFP4, FP8 KV cache).";
+  const soak = B.S4_combined_soak, en = B.S5_energy, off = B.S6_offline, fr = B.S7_failure_recovery;
+  if (soak && en) document.getElementById("stress").innerHTML = [
+    [`${soak.minutes}-min soak, both LLMs`, `${soak.max_temp_c} °C`, `${soak.tier1_inferences.toLocaleString()} + ${soak.tier2_inferences.toLocaleString()} inferences · throttling: ${soak.throttle_flag_seen ? "yes" : "none"} · errors: ${soak.errors}`],
+    ["Energy per inspection", `${en.tier1.joules_per_item.toFixed(1)} J`, `tier 1 · tier 2: ${en.tier2.joules_per_item.toFixed(1)} J`],
+    ["Throughput drift", `${soak.tier1_throughput_change_pct > 0 ? "+" : ""}${soak.tier1_throughput_change_pct}%`, "tier 1, first vs last minute of the soak"],
+    ["Network blocked", off ? `${off.completed}/${off.runs}` : "–", off ? `full inspections · ${off.outbound_connection_attempts} outbound connection attempts` : ""],
+  ].map(([k, v, s]) => `<div class="box"><div class="muted">${k}</div><div class="big">${v}<small>${s}</small></div></div>`).join("") +
+    (fr ? `<div class="box" style="grid-column:span 4"><b>Fail-safe:</b> ${fr.cases} failure cases (corrupt, truncated, blank or noisy frames; a model server down), ${fr.broken_inputs_accepted} broken inputs accepted.</div>` : "");
+  if (P?.table?.length) document.getElementById("poltable").innerHTML = `<tr><th>Evidence after both edge models</th><th>P(defect)</th><th>Cost if accepted</th><th>Cost if rejected</th><th>Action</th></tr>` +
+    P.table.map(r => `<tr><td>${BUCKET[r.bucket] || r.bucket}</td><td>${pct(r.p_defect, 2)}</td><td>$${r.expected_cost_accept_usd.toFixed(3)}</td><td>$${r.expected_cost_reject_usd.toFixed(3)}</td>
+      <td><span class="pill ${r.action}">${r.action.replaceAll("_", " ")}</span></td></tr>`).join("") +
+    `<tr><td colspan="5" class="muted">Costs: escape $${P.costs.escape_usd}, scrap $${P.costs.false_reject_usd}, human review $${P.costs.human_review_usd}; line defect rate ${pct(P.defect_rate, 1)}.</td></tr>`;
+  if (sim) {
+    const max = Math.max(...Object.values(sim).map(x => x.cost_per_1000_usd));
+    document.getElementById("costbars").innerHTML = Object.entries(sim).map(([k, x]) => `<div class="bar ${k.startsWith("NanoInspect") ? "me" : ""}"><span>${k}</span>
+      <div class="t"><div class="f" style="width:${Math.max(1, 100 * x.cost_per_1000_usd / max)}%"></div></div><b>$${x.cost_per_1000_usd.toFixed(0)}</b></div>`).join("");
+    const me = sim["NanoInspect cascade"];
+    if (me) document.getElementById("impact-note").textContent = `Per 1,000 parts: ${me.escapes_per_1000.toFixed(1)} escaped defects, ${me.false_rejects_per_1000.toFixed(1)} good parts scrapped, ${me.human_reviews_per_1000.toFixed(0)} human reviews, ${me.vlm_calls_per_1000.toFixed(0)} VLM calls on the Nano. Image data sent to the cloud: escalated crops only.`;
+  }
+});
+</script>
+</body>
+</html>

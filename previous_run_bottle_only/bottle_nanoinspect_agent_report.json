@@ -1,0 +1,200 @@
+{
+  "image_path": "/home/hp14/jupyterlab/mvtec_anomaly_detection/bottle/test/broken_large/008.png",
+  "category": "bottle",
+  "batch_id": "DEMO-BATCH-001",
+  "vision_evidence": {
+    "source": "/home/hp14/jupyterlab/mvtec_anomaly_detection/bottle/test/broken_large/008.png",
+    "prediction": "ANOMALOUS",
+    "anomaly_probability": 1.0,
+    "latency_ms": 1.974
+  },
+  "tool_results": {
+    "reinspect_image": {
+      "tool": "reinspect_image",
+      "views": [
+        {
+          "source": "original",
+          "prediction": "ANOMALOUS",
+          "anomaly_probability": 1.0,
+          "latency_ms": 1.96
+        },
+        {
+          "source": "center_crop",
+          "prediction": "ANOMALOUS",
+          "anomaly_probability": 0.9997,
+          "latency_ms": 1.96
+        },
+        {
+          "source": "contrast_enhanced",
+          "prediction": "ANOMALOUS",
+          "anomaly_probability": 0.9999,
+          "latency_ms": 1.641
+        }
+      ],
+      "mean_anomaly_probability": 0.9999,
+      "anomaly_votes": 3,
+      "agreement": 1.0
+    },
+    "calculate_severity": {
+      "tool": "calculate_severity",
+      "severity": "high",
+      "initial_probability": 1.0,
+      "reinspection_probability": 0.9999,
+      "view_agreement": 1.0
+    },
+    "lookup_defect_sop": {
+      "tool": "lookup_defect_sop",
+      "category": "bottle",
+      "severity": "high",
+      "recommended_action": "Reject the bottle and inspect the current bottle batch."
+    },
+    "check_quality_history": {
+      "tool": "check_quality_history",
+      "batch_id": "DEMO-BATCH-001",
+      "items_inspected": 20,
+      "anomalies_found": 2,
+      "previous_pattern": "occasional surface variation"
+    }
+  },
+  "tool_trace": [
+    {
+      "step": 1,
+      "action": "reinspect_image",
+      "llm_proposed": "reinspect_image",
+      "reason": "The initial inspection predicted an anomaly with high probability (1.0), indicating a need for further verification.",
+      "tool_output": {
+        "tool": "reinspect_image",
+        "views": [
+          {
+            "source": "original",
+            "prediction": "ANOMALOUS",
+            "anomaly_probability": 1.0,
+            "latency_ms": 1.96
+          },
+          {
+            "source": "center_crop",
+            "prediction": "ANOMALOUS",
+            "anomaly_probability": 0.9997,
+            "latency_ms": 1.96
+          },
+          {
+            "source": "contrast_enhanced",
+            "prediction": "ANOMALOUS",
+            "anomaly_probability": 0.9999,
+            "latency_ms": 1.641
+          }
+        ],
+        "mean_anomaly_probability": 0.9999,
+        "anomaly_votes": 3,
+        "agreement": 1.0
+      }
+    },
+    {
+      "step": 2,
+      "action": "calculate_severity",
+      "llm_proposed": "calculate_severity",
+      "reason": "Reinspection confirms anomaly and there is agreement among different views.",
+      "tool_output": {
+        "tool": "calculate_severity",
+        "severity": "high",
+        "initial_probability": 1.0,
+        "reinspection_probability": 0.9999,
+        "view_agreement": 1.0
+      }
+    },
+    {
+      "step": 3,
+      "action": "lookup_defect_sop",
+      "llm_proposed": "calculate_severity",
+      "reason": "Initial severity calculation has been completed and requires no further action based on current data.",
+      "tool_output": {
+        "tool": "lookup_defect_sop",
+        "category": "bottle",
+        "severity": "high",
+        "recommended_action": "Reject the bottle and inspect the current bottle batch."
+      }
+    },
+    {
+      "step": 4,
+      "action": "check_quality_history",
+      "llm_proposed": "finalize",
+      "reason": "All necessary actions have been taken and the severity has been calculated as high with a recommended action to reject the bottle and inspect the current bottle batch.",
+      "tool_output": {
+        "tool": "check_quality_history",
+        "batch_id": "DEMO-BATCH-001",
+        "items_inspected": 20,
+        "anomalies_found": 2,
+        "previous_pattern": "occasional surface variation"
+      }
+    },
+    {
+      "step": 5,
+      "action": "finalize",
+      "reason": "All necessary actions have been taken and the severity has been calculated as high with clear recommended action."
+    }
+  ],
+  "metrics": {
+    "llm_calls": 6,
+    "llm_seconds": 8.917668913083617,
+    "llm_errors": [],
+    "llm_action_json_valid": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "guardrail_overrides": 2,
+    "total_seconds": 8.976170415990055
+  },
+  "report": {
+    "decision": "reject",
+    "severity": "high",
+    "defect_summary": "Based on deterministic rules and high initial anomaly probability, the bottle is summarily rejected due to potential quality issues.",
+    "operator_note": "The current batch inspection shows a pattern of occasional surface variation, and given the deterministic decision rule, the bottle has been rejected as per recommended action.",
+    "evidence": {
+      "initial": {
+        "prediction": "ANOMALOUS",
+        "anomaly_probability": 1.0,
+        "latency_ms": 1.974
+      },
+      "severity": {
+        "tool": "calculate_severity",
+        "severity": "high",
+        "initial_probability": 1.0,
+        "reinspection_probability": 0.9999,
+        "view_agreement": 1.0
+      },
+      "reinspection_views": [
+        {
+          "source": "original",
+          "prediction": "ANOMALOUS",
+          "anomaly_probability": 1.0,
+          "latency_ms": 1.96
+        },
+        {
+          "source": "center_crop",
+          "prediction": "ANOMALOUS",
+          "anomaly_probability": 0.9997,
+          "latency_ms": 1.96
+        },
+        {
+          "source": "contrast_enhanced",
+          "prediction": "ANOMALOUS",
+          "anomaly_probability": 0.9999,
+          "latency_ms": 1.641
+        }
+      ]
+    },
+    "recommended_action": "Reject the bottle and inspect the current bottle batch.",
+    "decision_policy": {
+      "reject_at": 0.85,
+      "review_at": 0.5,
+      "min_agreement_for_reject": 0.66
+    },
+    "llm_text_valid": true,
+    "llm_fallback_used": false,
+    "raw_output": "{\"defect_summary\": \"Based on deterministic rules and high initial anomaly probability, the bottle is summarily rejected due to potential quality issues.\", \"operator_note\": \"The current batch inspection shows a pattern of occasional surface variation, and given the deterministic decision rule, the bottle has been rejected as per recommended action.\"}",
+    "schema_problems": []
+  }
+}

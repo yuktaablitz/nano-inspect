@@ -1,0 +1,94 @@
+{
+ "likelihoods": {
+  "fast_accept": {
+   "p_given_defect": 0.15689381933438987,
+   "p_given_good": 0.9466950959488273,
+   "n_defect": 98,
+   "n_good": 443
+  },
+  "agree_good": {
+   "p_given_defect": 0.0491283676703645,
+   "p_given_good": 0.8443496801705757,
+   "n_defect": 30,
+   "n_good": 395
+  },
+  "agree_defect": {
+   "p_given_defect": 0.7828843106180665,
+   "p_given_good": 0.010660980810234541,
+   "n_defect": 493,
+   "n_good": 4
+  },
+  "t1_flag_t2_good": {
+   "p_given_defect": 0.061806656101426306,
+   "p_given_good": 0.04477611940298507,
+   "n_defect": 38,
+   "n_good": 20
+  },
+  "t1_good_t2_defect": {
+   "p_given_defect": 0.10935023771790808,
+   "p_given_good": 0.1044776119402985,
+   "n_defect": 68,
+   "n_good": 48
+  },
+  "t2_unusable": {
+   "p_given_defect": 0.001584786053882726,
+   "p_given_good": 0.0021321961620469083,
+   "n_defect": 0,
+   "n_good": 0
+  }
+ },
+ "costs": {
+  "escape_usd": 50.0,
+  "false_reject_usd": 2.0,
+  "human_review_usd": 0.5
+ },
+ "defect_rate": 0.05,
+ "audit_rate": 0.05,
+ "t_lo": 0.5,
+ "held_out_result": {
+  "NanoInspect cascade": {
+   "escapes_per_1000": 7.280564263322882,
+   "false_rejects_per_1000": 11.354581673306772,
+   "vlm_calls_per_1000": 147.88254505489004,
+   "human_reviews_per_1000": 56.99852627109119,
+   "cost_per_1000_usd": 415.23663964830325
+  },
+  "Human inspects every part": {
+   "escapes_per_1000": 0.0,
+   "false_rejects_per_1000": 0.0,
+   "vlm_calls_per_1000": 0.0,
+   "human_reviews_per_1000": 1000.0,
+   "cost_per_1000_usd": 500.0
+  },
+  "Tier 1 alone (fine-tuned 7B decides)": {
+   "escapes_per_1000": 7.523510971786834,
+   "false_rejects_per_1000": 60.557768924302785,
+   "vlm_calls_per_1000": 0.0,
+   "human_reviews_per_1000": 0.0,
+   "cost_per_1000_usd": 497.2910864379473
+  },
+  "Tier 2 alone (27B with reference decides)": {
+   "escapes_per_1000": 5.4858934169279,
+   "false_rejects_per_1000": 105.97609561752988,
+   "vlm_calls_per_1000": 0.0,
+   "human_reviews_per_1000": 0.0,
+   "cost_per_1000_usd": 486.24686208145476
+  },
+  "Baseline: 27B zero-shot alone": {
+   "escapes_per_1000": 10.658307210031348,
+   "false_rejects_per_1000": 109.7609561752988,
+   "vlm_calls_per_1000": 0.0,
+   "human_reviews_per_1000": 0.0,
+   "cost_per_1000_usd": 752.437272852165
+  },
+  "Baseline: ResNet-18 alone (non-LLM)": {
+   "escapes_per_1000": 3.761755485893417,
+   "false_rejects_per_1000": 128.68525896414343,
+   "vlm_calls_per_1000": 0.0,
+   "human_reviews_per_1000": 0.0,
+   "cost_per_1000_usd": 445.4582922229577
+  }
+ },
+ "fit_parts": 526,
+ "test_parts": 570
+}

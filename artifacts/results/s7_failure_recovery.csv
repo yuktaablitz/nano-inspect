@@ -1,0 +1,10 @@
+case,decision,reason
+random bytes,manual_review,unreadable (UnidentifiedImageError)
+truncated PNG,manual_review,unreadable image (image file is truncated)
+all-black frame (lens cap),manual_review,image does not look like a bottle from training (z=169.7); check the camera and the part
+all-white frame (overexposed),manual_review,image does not look like a bottle from training (z=169.7); check the camera and the part
+pure noise,manual_review,image does not look like a bottle from training (z=148.9); check the camera and the part
+tier 2 server down (good part),accept,tier 1 is confident the part is good (P(defect) 6.0%)
+tier 2 server down (defective part),manual_review,"tier 1 flags the part, tier 2 answer unusable; P(defect) 3.5%"
+tier 1 server down (good part),manual_review,"tier 1 flags the part, tier 2 (27B) sees no defect; P(defect) 8.8%"
+tier 1 server down (defective part),reject,tier 1 and tier 2 both see a defect; P(defect) 81.6%
