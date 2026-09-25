@@ -16,7 +16,7 @@ tier1() {
   nohup vllm serve Qwen/Qwen2.5-VL-7B-Instruct --host 127.0.0.1 --port 8001 \
     --served-model-name qwen2.5-vl-7b \
     --enable-lora --lora-modules "nanoinspect-7b-lora=$ADAPTER" --max-lora-rank 16 \
-    --gpu-memory-utilization 0.22 --max-model-len 4096 --max-num-seqs 32 \
+    --gpu-memory-utilization ${TIER1_MEM:-0.22} --max-model-len 4096 --max-num-seqs 32 \
     --limit-mm-per-prompt '{"image":1}' --mm-encoder-tp-mode data --enable-prefix-caching \
     > artifacts/logs/vllm_tier1.log 2>&1 &
   echo "tier 1 starting (pid $!)"
