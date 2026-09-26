@@ -1,7 +1,7 @@
 """Clients for the two vision-language models served locally by vLLM on the ZGX Nano.
 
 Tier 1 (cheap):     Qwen2.5-VL-7B + NanoInspect LoRA (fine-tuned on the Nano)   http://127.0.0.1:8001
-Tier 2 (expensive): Qwen3.8-27B NVFP4 (verified for DGX Spark / GB10 in the vLLM recipes)  http://127.0.0.1:8002
+Tier 2 (expensive): Qwen3.8-27B + NanoInspect LoRA (BF16), or the untrained NVFP4 build (vLLM recipes for DGX Spark / GB10)  http://127.0.0.1:8002
 
 Both speak the OpenAI-compatible API. Each answer is JSON; we also read the log-probabilities of the
 verdict token, which turns the model's answer into a calibrated-looking score P(defective) that can be

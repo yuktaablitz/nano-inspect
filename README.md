@@ -105,20 +105,38 @@ git clone https://github.com/yuktaablitz/nano-inspect.git && cd nano-inspect
 ./setup.sh              # 1. venv + packages, model weights, trained LoRA adapters from the GitHub release (then works offline)
 export NANOINSPECT_DATA=$HOME/Downloads/mvtec_anomaly_detection   # 2. MVTec AD (CC BY-NC-SA 4.0), download once
 ./start_all.sh          # 3. ONE COMMAND: tier 1 + fine-tuned tier 2 (vLLM), cloud review tier, edge app; waits until ready
+./start_all.sh demo     # 4. automated end-to-end check: runs accept / reject / human-review parts and verifies each outcome
 ```
-- `T2=nvfp4 ./start_all.sh` serves the untrained NVFP4 27B instead (faster, less memory). `./start_all.sh stop` stops what it started.
+
+**Prototype automation script (`start_all.sh`)**
+| Command | What it does |
+|---|---|
+| `./start_all.sh` | Starts every component that isn't already running, waits for each to be healthy, and prints the URLs |
+| `./start_all.sh --https` | The same, with the operator app on HTTPS across the network, so phones and laptops can use the live camera. It creates a self-signed certificate for the Nano's IP addresses |
+| `./start_all.sh demo` | Runs the three demo parts through the live pipeline and prints PASS/FAIL, tier and time for each. Exits non-zero on failure, so it works in CI |
+| `./start_all.sh status` | Health of tier 1, tier 2, the cloud tier and the edge app |
+| `./start_all.sh stop` | Stops what the script started |
+| `T2=nvfp4 ./start_all.sh` | Serves the untrained NVFP4 27B instead (faster, less memory) |
+
+Example `demo` output on the ZGX Nano:
+```
+  PASS  Good part          expected accept        got accept        at tier 1    3.6 s
+  PASS  Clear defect       expected reject        got reject        at tier 2   57.4 s
+  PASS  Models disagree    expected manual_review got manual_review at tier 3   25.6 s
+All three decisions as expected.
+```
 - The first start compiles GB10 kernels (about 10 min); later starts take 2–4 min.
 - Step by step instead: `./serve_models.sh tier1`, `./serve_models.sh tier2ft`, `./run_cloud.sh &`, `./run_edge.sh`. The cloud tier can also run elsewhere: `docker build -f cloud/Dockerfile -t nanoinspect-cloud .`, then set `NANOINSPECT_CLOUD_URL`.
 - Reproduce every number: `jupyter nbconvert --to notebook --execute --inplace nanoinspect.ipynb`, then `02_tier2_finetune_and_capacity.ipynb`. Retrain the adapters with `python -m nanoinspect.vlm` (7B, 28 min) and `python -m nanoinspect.finetune_t2` (27B, 2 h 14 min).
 
-From a laptop: `ssh -L 8080:localhost:8080 -L 9000:localhost:9000 <user>@<nano-ip>`, then open
-- **http://localhost:8080**, the operator console:
+From a laptop, either run `./start_all.sh --https` and open `https://<nano-ip>:8080`, or tunnel with `ssh -L 8080:localhost:8080 -L 9000:localhost:9000 <user>@<nano-ip>` and open http://localhost:8080. The operator console has:
   - inspect a part: upload a photo, take a picture with the phone or webcam, or run the three demo decisions (accept, reject, review);
   - chat with tier 2 about any part;
   - production line + line controller, and cloud escalations;
   - models and live serving metrics, and the escalation policy with editable costs;
   - API-cost savings, and **Fine-tuning & results** (before/after, loss curves, cost per 1,000 parts).
-- http://localhost:8080/pitch: interactive pitch with live numbers.
+- `/pitch`: interactive pitch with live numbers.
+- **[docs/presentation/NanoInspect_Presentation.html](docs/presentation/NanoInspect_Presentation.html)**: the 20-minute interactive deck. It is self-contained and works offline: download it and open it in a browser. Press N for speaker notes and A to see all slides.
 - http://localhost:9000: the cloud review console.
 
 The trained LoRA adapters (tier 1: 149 MB, tier 2: 294 MB zipped) are too large for git. `setup.sh` downloads them from the [`adapters-v1` release](https://github.com/yuktaablitz/nano-inspect/releases/tag/adapters-v1).
@@ -129,7 +147,8 @@ The trained LoRA adapters (tier 1: 149 MB, tier 2: 294 MB zipped) are too large 
 | Public repo with all source code | this repo (weights and the dataset are downloaded by `setup.sh`) |
 | Clear README with setup steps | this file, sections above |
 | How local / hybrid inference is implemented | [How local / hybrid inference works](#how-local--hybrid-inference-works), `docs/architecture.svg` |
-| Script to run on other machines | `setup.sh` (install) + `start_all.sh` (run everything) |
+| Script to automate the prototype | `setup.sh` (install) + `start_all.sh` (start everything, HTTPS option, status, **automated end-to-end demo check**, stop) |
+| Interactive deck | `docs/presentation/NanoInspect_Presentation.html` |
 
 ## Repository
 | Path | What |
@@ -145,7 +164,8 @@ The trained LoRA adapters (tier 1: 149 MB, tier 2: 294 MB zipped) are too large 
 | `nanoinspect/server.py`, `nanoinspect/web/` | Edge web app and pitch |
 | `nanoinspect/stress_llm.py`, `linesim.py`, `telemetry.py` | Soak, energy, robustness, offline, failure tests; line simulator; GPU telemetry |
 | `nanoinspect/vision.py`, `defects.py` | ResNet-18 baseline and its synthetic defects |
-| `setup.sh`, `start_all.sh` | Install everything; start everything with one command |
+| `setup.sh`, `start_all.sh` | Install everything; start, check (`demo`), monitor (`status`) and stop the whole prototype |
+| `docs/presentation/` | The interactive presentation (single HTML file) |
 | `serve_models.sh`, `run_edge.sh`, `run_cloud.sh` | Start one part: model tiers, edge app, cloud tier |
 | `docs/` | Architecture, Q&A for judges, demo and video script, vLLM recipe snapshot |
 

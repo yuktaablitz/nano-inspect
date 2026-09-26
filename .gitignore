@@ -14,3 +14,4 @@ guide/
 artifacts/models/
 artifacts/logs/
 _dryrun.ipynb
+artifacts/certs/

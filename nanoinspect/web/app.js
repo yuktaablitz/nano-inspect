@@ -195,7 +195,7 @@ function busy() { $("#result").innerHTML = `<div class="placeholder">Inspecting 
 let stream = null;
 $("#cam-on").onclick = async () => {
   try { stream = await navigator.mediaDevices.getUserMedia({ video: { width: 1280, height: 960 } }); $("#video").srcObject = stream; $("#cam").hidden = false; }
-  catch (e) { $("#result").innerHTML = `<div class="placeholder">Camera unavailable (${esc(e.message)}). Browsers allow the camera only on https or localhost: open the app through an SSH tunnel (http://localhost:8080), or upload a photo.</div>`; }
+  catch (e) { $("#result").innerHTML = `<div class="placeholder">Camera unavailable (${esc(e.message)}). Browsers allow the live camera only on https or localhost: open the app with https:// (./run_edge.sh --https), through an SSH tunnel (http://localhost:8080), or use "Take a picture" on a phone.</div>`; }
 };
 $("#cam-off").onclick = () => { stream?.getTracks().forEach(t => t.stop()); $("#cam").hidden = true; };
 $("#snap").onclick = () => {
@@ -557,7 +557,10 @@ document.addEventListener("click", e => {
   if (!el) { if (!e.target.closest(".search")) $("#search-res").hidden = true; return; }
   if (el.matches(".mega a")) { el.closest(".mi").classList.remove("open"); return; }
   if (el.dataset.src) { e.preventDefault(); if (view !== "inspect") go("inspect");
-    if (el.dataset.src === "upload") file.click(); else $("#cam-on").click(); return; }
+    if (el.dataset.src === "upload") file.click();
+    else if (window.isSecureContext) $("#cam-on").click();
+    else file.click();   // plain http: the live camera is blocked, but phones open their camera app for this input (capture="environment")
+    return; }
   if (el.matches("[data-demo],#demo-open")) { e.preventDefault(); openDemo(); }
   else if (el.dataset.run) runScenario(el.dataset.run, "modal");
   else if (el.dataset.mini) { if (!SCEN.length) loadScenarios().then(() => runScenario(el.dataset.mini, "page")); else runScenario(el.dataset.mini, "page"); }

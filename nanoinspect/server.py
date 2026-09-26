@@ -4,7 +4,7 @@
     python -m nanoinspect.server  # http://127.0.0.1:8080
 
 Env: NANOINSPECT_CLOUD_URL (default http://127.0.0.1:9000), NANOINSPECT_CLOUD_KEY, NANOINSPECT_SITE,
-     NANOINSPECT_HOST / NANOINSPECT_PORT
+     NANOINSPECT_HOST / NANOINSPECT_PORT, NANOINSPECT_SSL_CERT / NANOINSPECT_SSL_KEY (HTTPS)
 """
 import base64
 import collections
@@ -251,7 +251,7 @@ app.mount("/results", StaticFiles(directory=RESULTS_DIR), name="results")
 def meta():
     return {"site": SITE, "categories": CATEGORIES, "defect_types": S.defect_types, "cloud_url": CLOUD_URL, "started": S.started,
             "tier1": {"model": "Qwen2.5-VL-7B-Instruct + NanoInspect LoRA", "served_as": S.t1.model, "url": S.t1.url, "healthy": S.t1.healthy()},
-            "tier2": {"model": "Qwen3.8-27B (NVFP4)", "served_as": S.t2.model, "url": S.t2.url, "healthy": S.t2.healthy()},
+            "tier2": {"model": "Qwen3.8-27B + NanoInspect LoRA" if S.t2.model == serving.T2_ADAPTER else "Qwen3.8-27B (NVFP4)", "served_as": S.t2.model, "url": S.t2.url, "healthy": S.t2.healthy()},
             "t_lo": S.t_lo}
 
 
@@ -590,7 +590,10 @@ def reset():
 
 
 def main():
-    uvicorn.run(app, host=os.environ.get("NANOINSPECT_HOST", "127.0.0.1"), port=int(os.environ.get("NANOINSPECT_PORT", 8080)))
+    # NANOINSPECT_SSL_CERT / NANOINSPECT_SSL_KEY serve HTTPS, which browsers require for the live camera on other devices
+    cert, key = os.environ.get("NANOINSPECT_SSL_CERT"), os.environ.get("NANOINSPECT_SSL_KEY")
+    uvicorn.run(app, host=os.environ.get("NANOINSPECT_HOST", "127.0.0.1"), port=int(os.environ.get("NANOINSPECT_PORT", 8080)),
+                ssl_certfile=cert or None, ssl_keyfile=key or None)
 
 
 if __name__ == "__main__":

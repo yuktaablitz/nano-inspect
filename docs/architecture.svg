@@ -30,7 +30,7 @@
   <!-- tier 2 -->
   <rect x="210" y="250" width="250" height="130" rx="12" fill="#f5f3ff" stroke="#7c3aed" stroke-width="2"/>
   <text x="225" y="276" font-size="13" font-weight="800" fill="#7c3aed">TIER 2 · uncertain + 5% audit</text>
-  <text x="225" y="298" font-size="14" font-weight="700" fill="#0f172a">Qwen3.8-27B NVFP4 (vLLM)</text>
+  <text x="225" y="298" font-size="14" font-weight="700" fill="#0f172a">Qwen3.8-27B + LoRA (vLLM)</text>
   <text x="225" y="317" font-size="12" fill="#334155">DGX Spark-verified recipe; compares the</text>
   <text x="225" y="334" font-size="12" fill="#334155">part with a known-good reference image;</text>
   <text x="225" y="349" font-size="12" fill="#334155">explains the defect; operator chat</text>
@@ -55,7 +55,7 @@
   <text x="55" y="496" font-size="13" font-weight="800" fill="#0f172a">LOCAL RECORD + STORE-AND-FORWARD OUTBOX</text>
   <text x="55" y="518" font-size="12" fill="#334155">every decision + evidence in SQLite on the Nano (audit trail)</text>
   <text x="55" y="536" font-size="12" fill="#334155">escalations queue locally when the network is down</text>
-  <text x="55" y="554" font-size="12" fill="#334155">only a ~10 KB crop of the suspect region is sent, not the image</text>
+  <text x="55" y="554" font-size="12" fill="#334155">only a ~5 KB crop of the suspect region is sent, not the image</text>
   <text x="55" y="572" font-size="12" fill="#334155">human labels come back → training data for the next LoRA</text>
   <text x="55" y="590" font-size="12" font-weight="700" fill="#0e7490">operator web app: inspect · line · escalations · policy</text>
 
