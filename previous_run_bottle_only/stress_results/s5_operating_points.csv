@@ -1,7 +1,0 @@
-review_at,chosen_policy,escapes (defect accepted),escape_rate,false_rejects (good rejected),manual_review_share,good_parts_auto_accepted
-0.1,False,0,0.0,0,0.361,0
-0.15,False,0,0.0,0,0.349,1
-0.2,False,0,0.0,0,0.265,8
-0.3,False,0,0.0,0,0.181,15
-0.4,False,2,0.032,0,0.12,18
-0.5,True,2,0.032,0,0.108,19

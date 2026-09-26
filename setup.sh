@@ -41,11 +41,23 @@ for f in nanoinspect-tier1-qwen2.5-vl-7b-lora.zip nanoinspect-tier2-qwen3.8-27b-
 done
 python -c "from huggingface_hub import snapshot_download as s; s('Qwen/Qwen3.8-27B'); s('nvidia/Qwen3.8-27B-NVFP4')"
 
+echo "== Measured results + fitted escalation policy (from the GitHub release; the notebooks regenerate them)"
+if [ ! -f artifacts/results/benchmark_summary.json ]; then
+  curl -L -o artifacts/nanoinspect-results-v1.zip "$REL/nanoinspect-results-v1.zip"
+  (cd artifacts && unzip -oq nanoinspect-results-v1.zip)
+fi
+
+if command -v zrt > /dev/null 2>&1; then
+  echo "== HP Z Runtime found: configure it and cache both models (start_all.sh will serve through it)"
+  ./scripts/zrt_serve.sh setup && ./scripts/zrt_serve.sh pull
+fi
+
 cat <<'MSG'
 
 Setup done. Next:
   . .venv/bin/activate
   jupyter nbconvert --to notebook --execute --inplace nanoinspect.ipynb    # train + evaluate + stress test (~90 min)
   jupyter nbconvert --to notebook --execute --inplace 02_tier2_finetune_and_capacity.ipynb
-  ./start_all.sh       # both model tiers + cloud review tier (:9000) + operator app (:8080), in one command
+  ./start_all.sh --https   # both model tiers (HP Z Runtime if installed) + cloud review tier + operator app, one command
+  ./start_all.sh demo      # automated end-to-end check
 MSG

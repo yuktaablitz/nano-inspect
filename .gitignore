@@ -16,3 +16,12 @@ artifacts/logs/
 _dryrun.ipynb
 artifacts/certs/
 config/sop_history/
+# the repository holds code + the automation scripts only; everything below stays local
+# (measured results and splits ship as a release asset fetched by setup.sh)
+artifacts/
+docs/
+METRICS.md
+previous_run_bottle_only/
+nanoinspect_tier2ft.ipynb
+mvtec_edge_inspector.ipynb
+*.zip

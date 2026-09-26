@@ -266,7 +266,8 @@ def pitch():
 
 
 app.mount("/static", StaticFiles(directory=WEB), name="static")
-app.mount("/docs", StaticFiles(directory=DOCS), name="docs")
+if DOCS.is_dir():   # optional: project docs are not part of the code repository
+    app.mount("/docs", StaticFiles(directory=DOCS), name="docs")
 RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 app.mount("/results", StaticFiles(directory=RESULTS_DIR), name="results")
 
