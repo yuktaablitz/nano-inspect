@@ -1,0 +1,137 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
+<rect width="1920" height="1080" fill="#0b0b0c"/>
+<text x="56" y="70" font-size="44" font-weight="800" fill="#f4f2ee" text-anchor="start" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">NanoInspect · tech stack</text>
+<text x="58" y="108" font-size="21" font-weight="400" fill="#a8a59f" text-anchor="start" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">Everything runs on one HP ZGX Nano. The cloud only hosts a review console, with no AI.</text>
+<rect x="40" y="128" width="1396" height="850" rx="22" fill="none" stroke="#1b9aaa" stroke-width="3" stroke-dasharray="12 9"/>
+<rect x="64" y="114" width="330" height="30" fill="#0b0b0c"/>
+<text x="76" y="136" font-size="20" font-weight="800" fill="#1b9aaa" text-anchor="start" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">ON THE HP ZGX NANO</text>
+<rect x="56" y="150" width="1364" height="92" rx="14" fill="#151517" stroke="#34343a"/>
+<rect x="56" y="150" width="10" height="92" rx="5" fill="#e8452c"/>
+<text x="86" y="192" font-size="22" font-weight="800" fill="#f4f2ee" text-anchor="start" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">User interface</text>
+<text x="86" y="218" font-size="16" font-weight="500" fill="#7a766f" text-anchor="start" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">what operators see</text>
+<rect x="346" y="176" width="183.6" height="40" rx="20" fill="#e8452c" opacity="0.22" stroke="#e8452c" stroke-width="2"/>
+<text x="437.8" y="202" font-size="17" font-weight="700" fill="#f4f2ee" text-anchor="middle" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">Web app · 5 tabs</text>
+<rect x="541.6" y="176" width="250.79999999999998" height="40" rx="20" fill="#e8452c" opacity="0.1" stroke="#e8452c" stroke-width="1.2"/>
+<text x="667.0" y="202" font-size="17" font-weight="500" fill="#f4f2ee" text-anchor="middle" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">HTML · CSS · JavaScript</text>
+<rect x="804.4" y="176" width="154.8" height="40" rx="20" fill="#e8452c" opacity="0.1" stroke="#e8452c" stroke-width="1.2"/>
+<text x="881.8" y="202" font-size="17" font-weight="500" fill="#f4f2ee" text-anchor="middle" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">works offline</text>
+<rect x="971.2" y="176" width="78.0" height="40" rx="20" fill="#e8452c" opacity="0.1" stroke="#e8452c" stroke-width="1.2"/>
+<text x="1010.2" y="202" font-size="17" font-weight="500" fill="#f4f2ee" text-anchor="middle" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">HTTPS</text>
+<rect x="1061.2" y="176" width="231.6" height="40" rx="20" fill="#e8452c" opacity="0.1" stroke="#e8452c" stroke-width="1.2"/>
+<text x="1177.0" y="202" font-size="17" font-weight="500" fill="#f4f2ee" text-anchor="middle" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">phone / webcam camera</text>
+<rect x="56" y="252" width="1364" height="92" rx="14" fill="#151517" stroke="#34343a"/>
+<rect x="56" y="252" width="10" height="92" rx="5" fill="#a8a59f"/>
+<text x="86" y="294" font-size="22" font-weight="800" fill="#f4f2ee" text-anchor="start" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">Application</text>
+<text x="86" y="320" font-size="16" font-weight="500" fill="#7a766f" text-anchor="start" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">the edge server</text>
+<rect x="346" y="278" width="193.2" height="40" rx="20" fill="#a8a59f" opacity="0.22" stroke="#a8a59f" stroke-width="2"/>
+<text x="442.6" y="304" font-size="17" font-weight="700" fill="#f4f2ee" text-anchor="middle" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">FastAPI + Uvicorn</text>
+<rect x="551.2" y="278" width="106.8" height="40" rx="20" fill="#a8a59f" opacity="0.1" stroke="#a8a59f" stroke-width="1.2"/>
+<text x="604.6" y="304" font-size="17" font-weight="500" fill="#f4f2ee" text-anchor="middle" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">Pydantic</text>
+<rect x="670.0" y="278" width="250.79999999999998" height="40" rx="20" fill="#a8a59f" opacity="0.1" stroke="#a8a59f" stroke-width="1.2"/>
+<text x="795.4" y="304" font-size="17" font-weight="500" fill="#f4f2ee" text-anchor="middle" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">SQLite (audit + outbox)</text>
+<rect x="932.8" y="278" width="289.2" height="40" rx="20" fill="#a8a59f" opacity="0.1" stroke="#a8a59f" stroke-width="1.2"/>
+<text x="1077.3999999999999" y="304" font-size="17" font-weight="500" fill="#f4f2ee" text-anchor="middle" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">JSON Schema (line commands)</text>
+<rect x="56" y="354" width="1364" height="92" rx="14" fill="#151517" stroke="#34343a"/>
+<rect x="56" y="354" width="10" height="92" rx="5" fill="#ff7a5c"/>
+<text x="86" y="396" font-size="22" font-weight="800" fill="#f4f2ee" text-anchor="start" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">AI pipeline</text>
+<text x="86" y="422" font-size="16" font-weight="500" fill="#7a766f" text-anchor="start" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">our logic</text>
+<rect x="346" y="380" width="193.2" height="40" rx="20" fill="#ff7a5c" opacity="0.22" stroke="#ff7a5c" stroke-width="2"/>
+<text x="442.6" y="406" font-size="17" font-weight="700" fill="#f4f2ee" text-anchor="middle" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">Cost rule (Bayes)</text>
+<rect x="551.2" y="380" width="231.6" height="40" rx="20" fill="#ff7a5c" opacity="0.22" stroke="#ff7a5c" stroke-width="2"/>
+<text x="667.0" y="406" font-size="17" font-weight="700" fill="#f4f2ee" text-anchor="middle" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">SOP engine · ISO 9001</text>
+<rect x="794.8000000000001" y="380" width="337.2" height="40" rx="20" fill="#ff7a5c" opacity="0.1" stroke="#ff7a5c" stroke-width="1.2"/>
+<text x="963.4000000000001" y="406" font-size="17" font-weight="500" fill="#f4f2ee" text-anchor="middle" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">Difference map · ResNet-18 (CPU)</text>
+<rect x="56" y="456" width="1364" height="92" rx="14" fill="#151517" stroke="#34343a"/>
+<rect x="56" y="456" width="10" height="92" rx="5" fill="#8b5cf6"/>
+<text x="86" y="498" font-size="22" font-weight="800" fill="#f4f2ee" text-anchor="start" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">AI models</text>
+<text x="86" y="524" font-size="16" font-weight="500" fill="#7a766f" text-anchor="start" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">fine-tuned on the Nano</text>
+<rect x="346" y="482" width="308.4" height="40" rx="20" fill="#8b5cf6" opacity="0.22" stroke="#8b5cf6" stroke-width="2"/>
+<text x="500.2" y="508" font-size="17" font-weight="700" fill="#f4f2ee" text-anchor="middle" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">Tier 1 · Qwen2.5-VL-7B + LoRA</text>
+<rect x="666.4" y="482" width="346.8" height="40" rx="20" fill="#8b5cf6" opacity="0.22" stroke="#8b5cf6" stroke-width="2"/>
+<text x="839.8" y="508" font-size="17" font-weight="700" fill="#f4f2ee" text-anchor="middle" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">Tier 2 · Qwen3.8-27B + LoRA · FP8</text>
+<rect x="56" y="558" width="1364" height="92" rx="14" fill="#151517" stroke="#34343a"/>
+<rect x="56" y="558" width="10" height="92" rx="5" fill="#0096d6"/>
+<text x="86" y="600" font-size="22" font-weight="800" fill="#f4f2ee" text-anchor="start" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">Model serving</text>
+<text x="86" y="626" font-size="16" font-weight="500" fill="#7a766f" text-anchor="start" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">HP software</text>
+<rect x="346" y="584" width="202.79999999999998" height="40" rx="20" fill="#0096d6" opacity="0.22" stroke="#0096d6" stroke-width="2"/>
+<text x="447.4" y="610" font-size="17" font-weight="700" fill="#f4f2ee" text-anchor="middle" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">HP Z Runtime (zrt)</text>
+<rect x="560.8" y="584" width="183.6" height="40" rx="20" fill="#0096d6" opacity="0.1" stroke="#0096d6" stroke-width="1.2"/>
+<text x="652.5999999999999" y="610" font-size="17" font-weight="500" fill="#f4f2ee" text-anchor="middle" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">vLLM 0.26 inside</text>
+<rect x="756.4" y="584" width="193.2" height="40" rx="20" fill="#0096d6" opacity="0.1" stroke="#0096d6" stroke-width="1.2"/>
+<text x="853.0" y="610" font-size="17" font-weight="500" fill="#f4f2ee" text-anchor="middle" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">HTTPS proxy :8100</text>
+<rect x="961.5999999999999" y="584" width="231.6" height="40" rx="20" fill="#0096d6" opacity="0.1" stroke="#0096d6" stroke-width="1.2"/>
+<text x="1077.3999999999999" y="610" font-size="17" font-weight="500" fill="#f4f2ee" text-anchor="middle" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">OpenAI-compatible API</text>
+<rect x="1205.1999999999998" y="584" width="164.4" height="40" rx="20" fill="#0096d6" opacity="0.1" stroke="#0096d6" stroke-width="1.2"/>
+<text x="1287.3999999999999" y="610" font-size="17" font-weight="500" fill="#f4f2ee" text-anchor="middle" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">HP model cache</text>
+<rect x="56" y="660" width="1364" height="92" rx="14" fill="#151517" stroke="#34343a"/>
+<rect x="56" y="660" width="10" height="92" rx="5" fill="#e8452c"/>
+<text x="86" y="702" font-size="22" font-weight="800" fill="#f4f2ee" text-anchor="start" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">Training</text>
+<text x="86" y="728" font-size="16" font-weight="500" fill="#7a766f" text-anchor="start" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">on the Nano</text>
+<rect x="346" y="686" width="145.2" height="40" rx="20" fill="#e8452c" opacity="0.22" stroke="#e8452c" stroke-width="2"/>
+<text x="418.6" y="712" font-size="17" font-weight="700" fill="#f4f2ee" text-anchor="middle" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">PyTorch 2.13</text>
+<rect x="503.2" y="686" width="270.0" height="40" rx="20" fill="#e8452c" opacity="0.1" stroke="#e8452c" stroke-width="1.2"/>
+<text x="638.2" y="712" font-size="17" font-weight="500" fill="#f4f2ee" text-anchor="middle" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">Hugging Face Transformers</text>
+<rect x="785.2" y="686" width="135.6" height="40" rx="20" fill="#e8452c" opacity="0.22" stroke="#e8452c" stroke-width="2"/>
+<text x="853.0" y="712" font-size="17" font-weight="700" fill="#f4f2ee" text-anchor="middle" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">PEFT · LoRA</text>
+<rect x="932.8000000000001" y="686" width="97.2" height="40" rx="20" fill="#e8452c" opacity="0.1" stroke="#e8452c" stroke-width="1.2"/>
+<text x="981.4000000000001" y="712" font-size="17" font-weight="500" fill="#f4f2ee" text-anchor="middle" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">Jupyter</text>
+<rect x="1042.0" y="686" width="154.8" height="40" rx="20" fill="#e8452c" opacity="0.1" stroke="#e8452c" stroke-width="1.2"/>
+<text x="1119.4" y="712" font-size="17" font-weight="500" fill="#f4f2ee" text-anchor="middle" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">MVTec AD data</text>
+<rect x="56" y="762" width="1364" height="92" rx="14" fill="#151517" stroke="#34343a"/>
+<rect x="56" y="762" width="10" height="92" rx="5" fill="#76b900"/>
+<text x="86" y="804" font-size="22" font-weight="800" fill="#f4f2ee" text-anchor="start" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">System software</text>
+<text x="86" y="830" font-size="16" font-weight="500" fill="#7a766f" text-anchor="start" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">ships with the Nano</text>
+<rect x="346" y="788" width="231.6" height="40" rx="20" fill="#76b900" opacity="0.22" stroke="#76b900" stroke-width="2"/>
+<text x="461.8" y="814" font-size="17" font-weight="700" fill="#f4f2ee" text-anchor="middle" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">DGX OS · Ubuntu 24.04</text>
+<rect x="589.6" y="788" width="97.2" height="40" rx="20" fill="#76b900" opacity="0.1" stroke="#76b900" stroke-width="1.2"/>
+<text x="638.2" y="814" font-size="17" font-weight="500" fill="#f4f2ee" text-anchor="middle" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">CUDA 13</text>
+<rect x="698.8000000000001" y="788" width="193.2" height="40" rx="20" fill="#76b900" opacity="0.1" stroke="#76b900" stroke-width="1.2"/>
+<text x="795.4000000000001" y="814" font-size="17" font-weight="500" fill="#f4f2ee" text-anchor="middle" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">NVIDIA driver 580</text>
+<rect x="904.0" y="788" width="222.0" height="40" rx="20" fill="#76b900" opacity="0.1" stroke="#76b900" stroke-width="1.2"/>
+<text x="1015.0" y="814" font-size="17" font-weight="500" fill="#f4f2ee" text-anchor="middle" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">nvidia-smi telemetry</text>
+<rect x="56" y="864" width="1364" height="92" rx="14" fill="#151517" stroke="#34343a"/>
+<rect x="56" y="864" width="10" height="92" rx="5" fill="#4a4a52"/>
+<text x="86" y="906" font-size="22" font-weight="800" fill="#f4f2ee" text-anchor="start" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">Hardware</text>
+<text x="86" y="932" font-size="16" font-weight="500" fill="#7a766f" text-anchor="start" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">HP</text>
+<rect x="346" y="890" width="135.6" height="40" rx="20" fill="#4a4a52" opacity="0.22" stroke="#4a4a52" stroke-width="2"/>
+<text x="413.8" y="916" font-size="17" font-weight="700" fill="#f4f2ee" text-anchor="middle" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">HP ZGX Nano</text>
+<rect x="493.6" y="890" width="289.2" height="40" rx="20" fill="#4a4a52" opacity="0.22" stroke="#4a4a52" stroke-width="2"/>
+<text x="638.2" y="916" font-size="17" font-weight="700" fill="#f4f2ee" text-anchor="middle" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">NVIDIA GB10 Grace Blackwell</text>
+<rect x="794.8" y="890" width="231.6" height="40" rx="20" fill="#4a4a52" opacity="0.1" stroke="#4a4a52" stroke-width="1.2"/>
+<text x="910.5999999999999" y="916" font-size="17" font-weight="500" fill="#f4f2ee" text-anchor="middle" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">128 GB unified memory</text>
+<rect x="1038.3999999999999" y="890" width="145.2" height="40" rx="20" fill="#4a4a52" opacity="0.1" stroke="#4a4a52" stroke-width="1.2"/>
+<text x="1110.9999999999998" y="916" font-size="17" font-weight="500" fill="#f4f2ee" text-anchor="middle" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">20 Arm cores</text>
+<rect x="1195.6" y="890" width="116.39999999999999" height="40" rx="20" fill="#4a4a52" opacity="0.1" stroke="#4a4a52" stroke-width="1.2"/>
+<text x="1253.8" y="916" font-size="17" font-weight="500" fill="#f4f2ee" text-anchor="middle" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">4 TB NVMe</text>
+<rect x="1476" y="128" width="408" height="442" rx="22" fill="none" stroke="#e8452c" stroke-width="3" stroke-dasharray="12 9"/>
+<rect x="1496" y="114" width="190" height="30" fill="#0b0b0c"/>
+<text x="1508" y="136" font-size="20" font-weight="800" fill="#e8452c" text-anchor="start" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">IN THE CLOUD</text>
+<rect x="1492" y="150" width="376" height="398" rx="14" fill="#151517" stroke="#34343a"/>
+<text x="1512" y="190" font-size="22" font-weight="800" fill="#f4f2ee" text-anchor="start" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">Human review console</text>
+<text x="1512" y="218" font-size="16" font-weight="500" fill="#7a766f" text-anchor="start" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">only escalated crops (~5 KB)</text>
+<rect x="1512" y="250" width="97.2" height="40" rx="20" fill="#e8452c" opacity="0.22" stroke="#e8452c" stroke-width="2"/>
+<text x="1560.6" y="276" font-size="17" font-weight="700" fill="#f4f2ee" text-anchor="middle" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">FastAPI</text>
+<rect x="1682" y="250" width="87.6" height="40" rx="20" fill="#e8452c" opacity="0.22" stroke="#e8452c" stroke-width="2"/>
+<text x="1725.8" y="276" font-size="17" font-weight="700" fill="#f4f2ee" text-anchor="middle" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">Docker</text>
+<rect x="1512" y="302" width="145.2" height="40" rx="20" fill="#e8452c" opacity="0.1" stroke="#e8452c" stroke-width="1.2"/>
+<text x="1584.6" y="328" font-size="17" font-weight="500" fill="#f4f2ee" text-anchor="middle" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">API-key auth</text>
+<rect x="1682" y="302" width="87.6" height="40" rx="20" fill="#e8452c" opacity="0.1" stroke="#e8452c" stroke-width="1.2"/>
+<text x="1725.8" y="328" font-size="17" font-weight="500" fill="#f4f2ee" text-anchor="middle" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">SQLite</text>
+<text x="1512" y="400" font-size="16" font-weight="400" fill="#a8a59f" text-anchor="start" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">sees: the crop + both models' answers</text>
+<text x="1512" y="428" font-size="16" font-weight="400" fill="#a8a59f" text-anchor="start" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">reviewer presses G (good) or D (defect)</text>
+<text x="1512" y="490" font-size="20" font-weight="800" fill="#22c55e" text-anchor="start" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">no AI in the cloud</text>
+<rect x="1476" y="602" width="408" height="376" rx="22" fill="none" stroke="#34343a" stroke-width="3" stroke-dasharray="12 9"/>
+<rect x="1496" y="588" width="250" height="30" fill="#0b0b0c"/>
+<text x="1508" y="610" font-size="20" font-weight="800" fill="#7a766f" text-anchor="start" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">BUILD &amp; OPERATE</text>
+<text x="1508" y="664" font-size="19" font-weight="800" fill="#ff7a5c" text-anchor="start" font-family="ui-monospace,Menlo,Consolas,monospace">setup.sh</text>
+<text x="1508" y="688" font-size="16" font-weight="400" fill="#a8a59f" text-anchor="start" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">install everything</text>
+<text x="1508" y="724" font-size="19" font-weight="800" fill="#ff7a5c" text-anchor="start" font-family="ui-monospace,Menlo,Consolas,monospace">start_all.sh</text>
+<text x="1508" y="748" font-size="16" font-weight="400" fill="#a8a59f" text-anchor="start" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">start · demo check · stop</text>
+<text x="1508" y="784" font-size="19" font-weight="800" fill="#ff7a5c" text-anchor="start" font-family="ui-monospace,Menlo,Consolas,monospace">zrt_serve.sh</text>
+<text x="1508" y="808" font-size="16" font-weight="400" fill="#a8a59f" text-anchor="start" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">HP Z Runtime services</text>
+<text x="1508" y="844" font-size="19" font-weight="800" fill="#ff7a5c" text-anchor="start" font-family="ui-monospace,Menlo,Consolas,monospace">GitHub</text>
+<text x="1508" y="868" font-size="16" font-weight="400" fill="#a8a59f" text-anchor="start" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">code · adapters · docs</text>
+<text x="1508" y="904" font-size="19" font-weight="800" fill="#ff7a5c" text-anchor="start" font-family="ui-monospace,Menlo,Consolas,monospace">HTML deck</text>
+<text x="1508" y="928" font-size="16" font-weight="400" fill="#a8a59f" text-anchor="start" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">27 animated slides</text>
+<text x="56" y="1050" font-size="17" font-weight="400" fill="#7a766f" text-anchor="start" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">Bold chips = the core component of each layer.  Tier 1 checks every part (~2 s); tier 2 double-checks unsure parts (~6 s); a person sees ~5.6%.</text>
+</svg>
