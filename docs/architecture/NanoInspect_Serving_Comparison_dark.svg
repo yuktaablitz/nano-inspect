@@ -1,10 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
 <rect width="1920" height="1080" fill="#0b0b0c"/>
-<text x="56" y="68" font-size="40" font-weight="800" fill="#f4f2ee" text-anchor="start" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">Serving layer: today vs. with HP Z Runtime</text>
+<text x="56" y="68" font-size="40" font-weight="800" fill="#f4f2ee" text-anchor="start" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">Serving layer: before vs. now (HP Z Runtime)</text>
 <text x="58" y="104" font-size="20" font-weight="400" fill="#a8a59f" text-anchor="start" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">Only the serving layer changes. The models, our fine-tuned adapters, the pipeline and the web app stay the same; no re-training.</text>
 <rect x="44" y="140" width="886" height="640" rx="20" fill="none" stroke="#1b9aaa" stroke-width="3" stroke-dasharray="12 9"/>
-<rect x="66" y="126" width="353.5" height="30" fill="#0b0b0c"/>
-<text x="76" y="148" font-size="18" font-weight="800" fill="#1b9aaa" text-anchor="start" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">TODAY · direct vLLM (running)</text>
+<rect x="66" y="126" width="250.0" height="30" fill="#0b0b0c"/>
+<text x="76" y="148" font-size="18" font-weight="800" fill="#1b9aaa" text-anchor="start" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">BEFORE · direct vLLM</text>
 <rect x="60" y="180" width="854" height="84" rx="12" fill="#151517" stroke="#e8452c" stroke-width="2.5"/>
 <rect x="60" y="180" width="10" height="84" rx="5" fill="#e8452c"/>
 <text x="86" y="212" font-size="20" font-weight="800" fill="#f4f2ee" text-anchor="start" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">NanoInspect edge app</text>
@@ -30,18 +30,18 @@
 <text x="86" y="684" font-size="20" font-weight="800" fill="#f4f2ee" text-anchor="start" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">HP ZGX Nano · GB10 · 128 GB unified memory</text>
 <text x="86" y="710" font-size="16" font-weight="400" fill="#a8a59f" text-anchor="start" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">DGX OS · CUDA 13 · driver 580</text>
 <rect x="974" y="140" width="886" height="640" rx="20" fill="none" stroke="#0096d6" stroke-width="3" stroke-dasharray="12 9"/>
-<rect x="996" y="126" width="434.0" height="30" fill="#0b0b0c"/>
-<text x="1006" y="148" font-size="18" font-weight="800" fill="#0096d6" text-anchor="start" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">WITH HP Z RUNTIME (prepared, opt-in)</text>
+<rect x="996" y="126" width="342.0" height="30" fill="#0b0b0c"/>
+<text x="1006" y="148" font-size="18" font-weight="800" fill="#0096d6" text-anchor="start" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">NOW · HP Z RUNTIME (running)</text>
 <rect x="990" y="180" width="854" height="84" rx="12" fill="#151517" stroke="#e8452c" stroke-width="2.5"/>
 <rect x="990" y="180" width="10" height="84" rx="5" fill="#e8452c"/>
 <text x="1016" y="212" font-size="20" font-weight="800" fill="#f4f2ee" text-anchor="start" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">NanoInspect edge app</text>
-<text x="1016" y="238" font-size="16" font-weight="400" fill="#a8a59f" text-anchor="start" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">unchanged; points at the proxy (SERVE=zrt)</text>
+<text x="1016" y="238" font-size="16" font-weight="400" fill="#a8a59f" text-anchor="start" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">unchanged; points at the proxy (default when zrt is installed)</text>
 <text x="1828" y="212" font-size="14" font-weight="700" fill="#22c55e" text-anchor="end" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">unchanged</text>
 <path d="M1417,264 L1417,294" stroke="#a8a59f" stroke-width="3" marker-end="url(#mk)"/>
 <rect x="990" y="298" width="854" height="84" rx="12" fill="#151517" stroke="#0096d6" stroke-width="2.5"/>
 <rect x="990" y="298" width="10" height="84" rx="5" fill="#0096d6"/>
 <text x="1016" y="330" font-size="20" font-weight="800" fill="#f4f2ee" text-anchor="start" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">HP Z Runtime proxy · HTTPS 127.0.0.1:8100</text>
-<text x="1016" y="356" font-size="16" font-weight="400" fill="#a8a59f" text-anchor="start" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">one OpenAI-compatible front door for both tiers · TLS on</text>
+<text x="1016" y="356" font-size="16" font-weight="400" fill="#a8a59f" text-anchor="start" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">one front door · routes by service label = adapter name · TLS on</text>
 <path d="M1417,382 L1417,412" stroke="#a8a59f" stroke-width="3" marker-end="url(#mk)"/>
 <rect x="990" y="416" width="854" height="84" rx="12" fill="#151517" stroke="#0096d6" stroke-width="2.5"/>
 <rect x="990" y="416" width="10" height="84" rx="5" fill="#0096d6"/>
@@ -61,8 +61,8 @@
 <text x="1828" y="684" font-size="14" font-weight="700" fill="#22c55e" text-anchor="end" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">unchanged</text>
 <defs><marker id="mk" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#a8a59f"/></marker></defs>
 <text x="58" y="806" font-size="15" font-weight="800" fill="#7a766f" text-anchor="start" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">What changes</text>
-<text x="418" y="806" font-size="15" font-weight="800" fill="#7a766f" text-anchor="start" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">Today</text>
-<text x="1118" y="806" font-size="15" font-weight="800" fill="#7a766f" text-anchor="start" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">With HP Z Runtime</text>
+<text x="418" y="806" font-size="15" font-weight="800" fill="#7a766f" text-anchor="start" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">Before</text>
+<text x="1118" y="806" font-size="15" font-weight="800" fill="#7a766f" text-anchor="start" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">Now (HP Z Runtime)</text>
 <rect x="44" y="820" width="1832" height="42" rx="8" fill="#151517"/>
 <text x="58" y="850" font-size="17" font-weight="800" fill="#f4f2ee" text-anchor="start" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">Launch command</text>
 <text x="418" y="850" font-size="17" font-weight="500" fill="#1b9aaa" text-anchor="start" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">vllm serve …  (two servers)</text>
@@ -81,6 +81,6 @@
 <text x="1118" y="982" font-size="17" font-weight="500" fill="#0096d6" text-anchor="start" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">zrt status · zrt metrics · zrt logs</text>
 <rect x="44" y="996" width="1832" height="42" rx="8" fill="#151517"/>
 <text x="58" y="1026" font-size="17" font-weight="800" fill="#f4f2ee" text-anchor="start" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">Fine-tuning / accuracy</text>
-<text x="418" y="1026" font-size="17" font-weight="500" fill="#1b9aaa" text-anchor="start" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">adapters trained on the Nano</text>
-<text x="1118" y="1026" font-size="17" font-weight="500" fill="#0096d6" text-anchor="start" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">same adapters, no re-training; verify with ./start_all.sh demo</text>
+<text x="418" y="1026" font-size="17" font-weight="500" fill="#1b9aaa" text-anchor="start" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">95.3% caught · 4.7% false alarms</text>
+<text x="1118" y="1026" font-size="17" font-weight="500" fill="#0096d6" text-anchor="start" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">same adapters, no re-training · 95.3% caught · 4.0% false alarms</text>
 </svg>

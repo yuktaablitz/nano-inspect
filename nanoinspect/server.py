@@ -73,6 +73,8 @@ class State:
         # When tier 2 is the fine-tuned adapter, the untrained base model on the same server writes explanations,
         # reports and chat answers (fine-tuning made its verdicts better but its sentences template-like).
         self.writer = serving.TIER2_BASE if self.t2.model == serving.T2_ADAPTER else None
+        if os.environ.get("NANOINSPECT_WRITER") == "none":   # HP Z Runtime routes one model name per service: no separate writer
+            self.writer = None
         self.delta = DeltaMap(self.splits)                 # explicit good-vs-part delta (heatmap + score)
         self.act = ActionBuilder(self.t2, self.refs, writer_model=self.writer)   # SOP-grounded machine JSON for the line controller
         self.defect_types = {c: data.defect_types(c) for c in CATEGORIES}

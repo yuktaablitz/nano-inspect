@@ -24,6 +24,9 @@ from .config import LOCATIONS
 from .data import defect_types, load_pil
 
 TIER1_URL = os.environ.get("NANOINSPECT_TIER1_URL", "http://127.0.0.1:8001")
+TLS_VERIFY = os.environ.get("NANOINSPECT_TLS_VERIFY", "1") != "0"   # 0 = accept a local self-signed certificate (HP Z Runtime proxy)
+if not TLS_VERIFY:
+    import urllib3; urllib3.disable_warnings()
 TIER2_URL = os.environ.get("NANOINSPECT_TIER2_URL", "http://127.0.0.1:8002")
 TIER1_MODEL = os.environ.get("NANOINSPECT_TIER1_MODEL", "nanoinspect-7b-lora")
 TIER1_BASE = "qwen2.5-vl-7b"
@@ -113,7 +116,7 @@ class Tier:
     def __init__(self, name, url, model, prompt_fn, n_images=1, extra=None, max_tokens=48, timeout=180):
         self.name, self.url, self.model, self.prompt_fn = name, url.rstrip("/"), model, prompt_fn
         self.n_images, self.extra, self.max_tokens, self.timeout = n_images, extra or {}, max_tokens, timeout
-        self.session = requests.Session()
+        self.session = requests.Session(); self.session.verify = TLS_VERIFY
 
     def messages(self, images, category):
         content = [{"type": "image_url", "image_url": {"url": to_data_url(im)}} for im in images]
@@ -187,7 +190,7 @@ def tier2():
     model = TIER2_MODEL
     if "NANOINSPECT_TIER2_MODEL" not in os.environ:
         try:
-            ids = [m["id"] for m in requests.get(f"{TIER2_URL}/v1/models", timeout=3).json()["data"]]
+            ids = [m["id"] for m in requests.get(f"{TIER2_URL}/v1/models", timeout=3, verify=TLS_VERIFY).json()["data"]]
             if T2_ADAPTER in ids: model = T2_ADAPTER
         except Exception:
             pass

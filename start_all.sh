@@ -9,6 +9,8 @@
 #
 #   Tier 2 is the fine-tuned 27B served with FP8 weights (1.8x faster than BF16, same accuracy: artifacts/results/tier2_fp8_vs_bf16.json)
 #   TIER2_QUANT= ./start_all.sh  serve it in full BF16 instead;  T2=nvfp4 ./start_all.sh  serve the untrained NVFP4 27B
+#   Serving: both tiers run through HP Z Runtime (scripts/zrt_serve.sh) when zrt is installed; SERVE=vllm ./start_all.sh
+#   serves them with vLLM directly instead (serve_models.sh)
 set -uo pipefail
 cd "$(dirname "$0")"
 mkdir -p artifacts/logs
@@ -17,11 +19,19 @@ PY=${PYTHON:-$( [ -x .venv/bin/python ] && echo .venv/bin/python || echo /home/h
 
 up()  { curl -skf --max-time 5 "$1" > /dev/null; }
 edge_url() { if up "https://127.0.0.1:8080/api/meta"; then echo "https://127.0.0.1:8080"; elif up "http://127.0.0.1:8080/api/meta"; then echo "http://127.0.0.1:8080"; fi; }
+# Serving: HP Z Runtime when it is installed (default on the ZGX Nano), else direct vLLM. SERVE=vllm forces direct vLLM.
+if [ -z "${SERVE:-}" ]; then if command -v zrt > /dev/null 2>&1; then SERVE=zrt; else SERVE=vllm; fi; fi
+if [ "$SERVE" = "zrt" ]; then   # both tiers behind zrt's HTTPS proxy
+  T1U=https://127.0.0.1:8100; T2U=https://127.0.0.1:8100
+  export NANOINSPECT_TIER1_URL=$T1U NANOINSPECT_TIER2_URL=$T2U NANOINSPECT_TLS_VERIFY=0 NANOINSPECT_WRITER=none
+else
+  T1U=http://127.0.0.1:8001; T2U=http://127.0.0.1:8002
+fi
 lan_ip() { hostname -I 2>/dev/null | tr ' ' '\n' | grep -E '^[0-9]+\.' | grep -v '^172\.17\.' | head -1; }
 
 status() {
   local ok=0
-  for c in "tier 1 (7B + LoRA)|http://127.0.0.1:8001/v1/models" "tier 2 (27B)|http://127.0.0.1:8002/v1/models" "cloud review tier|http://127.0.0.1:9000/"; do
+  for c in "tier 1 (7B + LoRA)|$T1U/v1/models" "tier 2 (27B)|$T2U/v1/models" "cloud review tier|http://127.0.0.1:9000/"; do
     if up "${c#*|}"; then printf '  %-22s up\n' "${c%%|*}"; else printf '  %-22s DOWN\n' "${c%%|*}"; ok=1; fi
   done
   local e; e=$(edge_url)
@@ -75,11 +85,13 @@ esac
 
 touch "$PIDS"
 # 1. Model tiers (vLLM, OpenAI-compatible API on localhost). Skipped if already running.
-if ! up http://127.0.0.1:8001/v1/models; then
+if [ "${SERVE:-vllm}" = "zrt" ]; then
+  up "$T2U/v1/models" || ./scripts/zrt_serve.sh start || { echo "zrt start failed; see: scripts/zrt_serve.sh status"; exit 1; }
+elif ! up http://127.0.0.1:8001/v1/models; then
   TIER1_MEM=${TIER1_MEM:-0.18} ./serve_models.sh tier1 || { echo "tier 1 failed; see artifacts/logs/vllm_tier1.log"; exit 1; }
   pgrep -f -- "--port 8001" >> "$PIDS" || true
 fi
-if ! up http://127.0.0.1:8002/v1/models; then
+if [ "${SERVE:-vllm}" != "zrt" ] && ! up http://127.0.0.1:8002/v1/models; then
   if [ "${T2:-ft}" = "nvfp4" ] || [ ! -f artifacts/models/vlm_lora_t2/adapter_config.json ]; then ./serve_models.sh tier2; else TIER2_QUANT=${TIER2_QUANT-fp8} ./serve_models.sh tier2ft; fi \
     || { echo "tier 2 failed; see artifacts/logs/vllm_tier2.log"; exit 1; }
   pgrep -f -- "--port 8002" >> "$PIDS" || true

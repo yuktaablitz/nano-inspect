@@ -144,6 +144,11 @@ def decide_part(pil, cat, *, t1, t2, refs, check, policy_fn, t_lo, force_t2=Fals
             r2, re_ = f2.result(), fe.result()
         if r2.get("valid") and re_.get("explanation") and re_.get("verdict") == r2.get("verdict"):   # never contradict the decision
             r2 = {**r2, "explanation_fine_tuned": r2.get("explanation"), "explanation": re_["explanation"], "explanation_by": explainer}
+    elif early:
+        # no separate writer (e.g. behind HP Z Runtime): decide early and show the plain template sentence
+        r2 = t2.safe_ask([refs[cat], pil], cat, None, STOP_BEFORE_EXPLANATION)
+        if r2.get("valid"):
+            r2 = {**r2, "explanation": template_sentence(r2)}
     else:
         r2 = t2.safe_ask([refs[cat], pil], cat)
     action, reason, bucket = policy_fn(p1, t_lo, r2["verdict"] if r2.get("valid") else None)

@@ -35,8 +35,8 @@ Then open `https://<nano-ip>:8080`.
 ## The system
 | Tier | Runs on | Model | Sees |
 |---|---|---|---|
-| 1 · cheap | ZGX Nano, vLLM :8001 | **Qwen2.5-VL-7B + LoRA fine-tuned on the Nano** (0.48% of weights, 28 min, real defect photos only) | every part: verdict, defect type, location, P(defect) from token log-probabilities |
-| 2 · expensive | ZGX Nano, vLLM :8002 | **Qwen3.8-27B + LoRA fine-tuned on the Nano** (79.7M of 27.4B parameters, 0.29%, 2 h 14 min), chosen from the [vLLM recipes](https://recipes.vllm.ai) verified for DGX Spark / GB10; served with **FP8 weights** + adapter (quantised at load: same accuracy as BF16, 1.8× faster; `artifacts/results/tier2_fp8_vs_bf16.json`), or untrained NVFP4 (`T2=nvfp4`) | parts tier 1 is unsure about, plus a 5% audit of accepts; compares with a known-good reference, explains, writes the NCR, answers operator chat |
+| 1 · cheap | ZGX Nano, **HP Z Runtime** (vLLM) | **Qwen2.5-VL-7B + LoRA fine-tuned on the Nano** (0.48% of weights, 28 min, real defect photos only) | every part: verdict, defect type, location, P(defect) from token log-probabilities |
+| 2 · expensive | ZGX Nano, **HP Z Runtime** (vLLM) | **Qwen3.8-27B + LoRA fine-tuned on the Nano** (79.7M of 27.4B parameters, 0.29%, 2 h 14 min), chosen from the [vLLM recipes](https://recipes.vllm.ai) verified for DGX Spark / GB10; served with **FP8 weights** + adapter (quantised at load: same accuracy as BF16, 1.8× faster; `artifacts/results/tier2_fp8_vs_bf16.json`), or untrained NVFP4 (`T2=nvfp4`) | parts tier 1 is unsure about, plus a 5% audit of accepts; compares with a known-good reference, explains, writes the NCR, answers operator chat |
 | 3 · cloud | any server | a human reviewer (**no AI in the cloud**) | only parts where review is cheaper than the risk |
 
 **Escalation rule (explicit, defensible, measurable).** Both tiers' answers put a part in an evidence bucket. Bayes' rule turns error rates measured on held-out parts, plus the line's defect rate, into P(defect | bucket). Then:
@@ -51,7 +51,7 @@ The rule is fitted on one half of the evaluation images and reported on the othe
 - A **SOP library** (`config/sop.json`, ISO 9001 §8.7) and **machine JSON** for the PLC / MES: divert, NCR, containment, and stop-line when a defect repeats.
 - A store-and-forward outbox: only a crop of an escalated part is sent, and it queues through outages.
 - Human labels flow back as training data.
-- **Early decision:** tier 2 stops as soon as it has written verdict, defect type and location, which is all the decision needs. The untrained 27B writes the operator's sentence in the background, and the page fills it in about 4 s later.
+- **Early decision:** tier 2 stops as soon as it has written verdict, defect type and location, which is all the decision needs. The operator sees a plain sentence built from those fields ("Visible broken large at the bottom-right…"). With direct vLLM (`SERVE=vllm`), the untrained 27B writes a free-text sentence in the background instead.
 - **Operator chat** with tier 2 about any inspected part, streamed word by word (first words in under a second).
 - **Your own SOP:** download the SOP in use, or upload the plant's `sop.json`. It is validated with plain-English errors, the previous version is kept in `config/sop_history/`, and it applies to the next decision.
 
@@ -88,6 +88,8 @@ All numbers are measured on the ZGX Nano, on the same 1,096 held-out images (629
 
 **Tier 2 in FP8 vs BF16** (the same 300 held-out images, 150 defective and 150 good): defects caught 95.3% vs 95.3%, good parts flagged 5.3% vs 4.7%, ROC-AUC 0.990 vs 0.992, same verdict on 99% of images; 0.84 vs 0.46 parts/s. FP8 is the default.
 
+**Tier 2 through HP Z Runtime** (the same 300 images): defects caught 95.3%, good parts flagged 4.0%, ROC-AUC 0.991, the same verdict on 99.7% of images, same throughput (`artifacts/results/tier2_zrt_vs_bf16.json`).
+
 **Time to a decision on the Nano** (live app, `./start_all.sh demo`):
 
 | Part | Outcome | Before optimising | Now |
@@ -114,10 +116,10 @@ See [METRICS.md](METRICS.md) for how and why each metric was chosen. The full nu
 NanoInspect is **local-first, hybrid by exception**: every model call happens on the ZGX Nano, and the cloud only stores what a human needs to see.
 
 ```
-camera / upload ─▶ input check ─▶ TIER 1 (7B + LoRA, vLLM :8001) ──P(defect) < T_LO──▶ ACCEPT          (≈1–2 s, most parts)
+camera / upload ─▶ input check ─▶ TIER 1 (7B + LoRA, via HP Z Runtime) ──P(defect) < T_LO──▶ ACCEPT          (≈1–2 s, most parts)
    (unreadable or out-of-distribution frames go straight to a human)   │ unsure, flagged, or 5% audit
                                                                         ▼
-                                  TIER 2 (27B + LoRA + known-good reference, vLLM :8002)
+                                  TIER 2 (27B + LoRA + known-good reference, via HP Z Runtime)
                                                                         │ evidence bucket ─▶ P(defect | bucket) (Bayes)
                                                                         ▼
                        min(P·$escape, (1−P)·$scrap) ≤ $review ?  ── yes ─▶ ACCEPT or REJECT on the edge
@@ -126,9 +128,9 @@ camera / upload ─▶ input check ─▶ TIER 1 (7B + LoRA, vLLM :8001) ──P
                CLOUD: store-and-forward outbox (SQLite) ─▶ human review console :9000 ─▶ label back to the edge
 ```
 
-- **Local (edge):** both vision-language models are served by vLLM on the Nano through an OpenAI-compatible API (`nanoinspect/serving.py`). The per-part cascade is in `nanoinspect/cascade.py` (`decide_part`), and the escalation rule is in `nanoinspect/policy.py`. A rejected part gets its SOP-grounded machine JSON (`nanoinspect/actions.py`) on the edge, so the line keeps running with the WAN down.
+- **Local (edge):** both vision-language models are served on the Nano by **HP Z Runtime (`zrt`)**, HP's serving layer, which runs vLLM underneath. `scripts/zrt_serve.sh` starts each tier with `zrt service start` and our exact vLLM settings, and both tiers sit behind ZRT's HTTPS proxy on `127.0.0.1:8100`. Each ZRT service is labelled with its fine-tuned adapter's name (`nanoinspect-7b-lora`, `nanoinspect-27b-lora`), because the proxy routes requests by label. The app talks to it through an OpenAI-compatible API (`nanoinspect/serving.py`). The per-part cascade is in `nanoinspect/cascade.py` (`decide_part`), and the escalation rule is in `nanoinspect/policy.py`. A rejected part gets its SOP-grounded machine JSON (`nanoinspect/actions.py`) on the edge, so the line keeps running with the WAN down.
 - **Tier 1 → tier 2:** tier 2 runs only when tier 1's P(defect) (from verdict-token log-probabilities) is at or above `T_LO`, plus a 5% random audit of accepts. Default is *throughput mode* (`T_LO` 0.5). *Capacity mode* (`T_LO` 0.047) sends as many parts to tier 2 as it can serve; switch in the app under Policy.
-- **Tier 2 → cloud:** a part leaves the building only when the two tiers disagree (tier 1 flags, tier 2 clears it, or the reverse), tier 2's answer is unusable, or the input itself is unreadable, *and* the cost rule says a human review is cheaper than the risk. The verdict comes from the fine-tuned 27B; the operator-facing sentence, NCR text and chat come from the same server's untrained 27B (better prose), used only when it agrees with the verdict.
+- **Tier 2 → cloud:** a part leaves the building only when the two tiers disagree (tier 1 flags, tier 2 clears it, or the reverse), tier 2's answer is unusable, or the input itself is unreadable, *and* the cost rule says a human review is cheaper than the risk. The verdict, the explanation and the operator chat all come from the fine-tuned 27B.
 - **Hybrid (cloud):** `nanoinspect/escalation.py` writes each escalation to a local SQLite outbox (`artifacts/edge.db`) and forwards only a crop plus the model evidence to `cloud/server.py`, retrying through outages. **The cloud runs no AI.** A reviewer's label returns to the edge as training data.
 - **Offline proof:** the notebook blocks every outbound connection in-process and runs full inspections (3/3 done, 0 connection attempts).
 
@@ -152,6 +154,8 @@ export NANOINSPECT_DATA=$HOME/Downloads/mvtec_anomaly_detection   # 2. MVTec AD 
 | `./start_all.sh stop` | Stops what the script started |
 | `TIER2_QUANT= ./start_all.sh` | Serves tier 2 in full BF16 instead of FP8 |
 | `T2=nvfp4 ./start_all.sh` | Serves the untrained NVFP4 27B instead of the fine-tuned model |
+| `SERVE=vllm ./start_all.sh` | Serves both tiers with vLLM directly (`serve_models.sh`) instead of HP Z Runtime, e.g. on a GB10 machine without ZRT |
+| `scripts/zrt_serve.sh setup · pull · start · status · stop` | HP Z Runtime only: configure the proxy (port 8100, TLS), download the models into ZRT's cache, start or stop both tiers |
 
 Example `demo` output on the ZGX Nano:
 ```
@@ -161,7 +165,8 @@ Example `demo` output on the ZGX Nano:
 All three decisions as expected.
 ```
 - The first start compiles GB10 kernels (about 10 min). Later, loading the models takes about 10 minutes and the operator app about 5, so start well before a demo.
-- Step by step instead: `./serve_models.sh tier1`, `TIER2_QUANT=fp8 ./serve_models.sh tier2ft`, `./run_cloud.sh &`, `./run_edge.sh --https`. The cloud tier can also run elsewhere: `docker build -f cloud/Dockerfile -t nanoinspect-cloud .`, then set `NANOINSPECT_CLOUD_URL`.
+- First time with HP Z Runtime: `scripts/zrt_serve.sh setup` then `scripts/zrt_serve.sh pull` (downloads ~72 GB into ZRT's cache).
+- Step by step instead: `scripts/zrt_serve.sh start` (or, without ZRT, `./serve_models.sh tier1` and `TIER2_QUANT=fp8 ./serve_models.sh tier2ft`), `./run_cloud.sh &`, `./run_edge.sh --https`. The cloud tier can also run elsewhere: `docker build -f cloud/Dockerfile -t nanoinspect-cloud .`, then set `NANOINSPECT_CLOUD_URL`.
 - Reproduce every number: `jupyter nbconvert --to notebook --execute --inplace nanoinspect.ipynb`, then `02_tier2_finetune_and_capacity.ipynb`. Retrain the adapters with `python -m nanoinspect.vlm` (7B, 28 min) and `python -m nanoinspect.finetune_t2` (27B, 2 h 14 min).
 
 From a laptop, either run `./start_all.sh --https` and open `https://<nano-ip>:8080`, or tunnel with `ssh -L 8080:localhost:8080 -L 9000:localhost:9000 <user>@<nano-ip>` and open http://localhost:8080.

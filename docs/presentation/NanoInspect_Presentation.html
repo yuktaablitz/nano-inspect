@@ -519,7 +519,7 @@ body.all #allhint{display:block}
 </div>
     <div class="col" data-a style="gap:12px;flex:1;--d:3200;--an:right">
       <div class="tag">Tech stack</div>
-      <span class="chip">vLLM 0.30 · OpenAI API</span>
+      <span class="chip">HP Z Runtime · vLLM · OpenAI API</span>
       <span class="chip">Qwen2.5-VL-7B</span>
       <span class="chip">Qwen3.8-27B (DGX Spark recipe)</span>
       <span class="chip">PEFT LoRA r=16</span>
@@ -650,17 +650,17 @@ body.all #allhint{display:block}
     <div class="stack" style="flex:1.5;justify-content:flex-end">
       <div class="layer" style="--c:#9ca3af;--d:200"><b>HP ZGX Nano</b><span class="muted">NVIDIA GB10 · 128 GB unified memory · 4 TB NVMe · deskside, ~50 W under our load</span><span class="badge b-used">USED</span></div>
       <div class="layer" style="--c:#76b900;--d:400"><b>DGX OS software</b><span class="muted">Ubuntu 24.04, NVIDIA driver 580, CUDA 13; GPU telemetry (nvidia-smi) streamed into our dashboard</span><span class="badge b-used">USED</span></div>
-      <div class="layer" style="--c:var(--t1);--d:600"><b>Inference: vLLM</b><span class="muted">NVIDIA’s vLLM recipes verified for DGX Spark / GB10; OpenAI-compatible API on localhost</span><span class="badge b-used">USED</span></div>
-      <div class="layer" style="--c:#0096d6;--d:800"><b>HP Z Runtime (<code>zrt</code>)</b><span class="muted">HP’s vLLM wrapper, installed on this Nano: model cache, <code>zrt serve</code>, metrics, auth + TLS proxy. Same engine and API as our tiers</span><span class="badge b-path">PRODUCTION PATH</span></div>
+      <div class="layer" style="--c:var(--t1);--d:600"><b>Inference engine: vLLM</b><span class="muted">runs inside HP Z Runtime, with NVIDIA’s DGX Spark / GB10 recipe settings and our LoRA adapters</span><span class="badge b-used">USED</span></div>
+      <div class="layer" style="--c:#0096d6;--d:800"><b>HP Z Runtime (<code>zrt</code>)</b><span class="muted">Serves both tiers on this Nano: <code>zrt service start</code>, HP model cache, one HTTPS proxy (127.0.0.1:8100), <code>zrt status / metrics</code>. Same accuracy as before (95.3% caught)</span><span class="badge b-used">USED</span></div>
       <div class="layer" style="--c:var(--t2);--d:1000"><b>Models + our adapters</b><span class="muted">Qwen2.5-VL-7B and Qwen3.8-27B, with LoRA adapters trained on this box</span><span class="badge b-used">USED</span></div>
       <div class="layer" style="--c:var(--acc);--d:1200"><b>NanoInspect</b><span class="muted">Pipeline · cost policy · SOP engine · operator app · outbox → PLC / MES (JSON) and the cloud review tier</span><span class="badge b-used">BUILT</span></div>
     </div>
     <div class="col" data-a style="flex:1;--d:1400;--an:right">
       <div class="card"><h3>What the HP platform gave us</h3><p>Train, serve and run the app on <b style="color:#fff">one box</b>: no data centre, no cloud GPU contract, and nothing to leak.</p></div>
-      <div class="card"><h3>What it gives a customer</h3><p>An <b style="color:#fff">AI inspection appliance per line</b>: <code>./start_all.sh</code> on any ZGX Nano / GB10. For production, serve each tier with <code>zrt serve</code> and turn on its auth + TLS proxy.</p></div>
+      <div class="card"><h3>What it gives a customer</h3><p>An <b style="color:#fff">AI inspection appliance per line</b>: <code>./start_all.sh</code> on any ZGX Nano starts both tiers through HP Z Runtime, the app and the cloud tier, and <code>./start_all.sh demo</code> checks it end to end.</p></div>
     </div>
   </div>
-  <aside class="notes">How we integrated the HP product, bottom to top. The HP ZGX Nano hardware. The DGX OS stack it ships with: CUDA 13 and the driver, with GPU telemetry streamed straight into our dashboard. vLLM using NVIDIA's recipes verified for this chip. HP Z Runtime, zrt, is HP's own vLLM wrapper and is installed on this Nano. It has the same engine and the same OpenAI API as our tiers, so it's the production path: zrt serve for each tier, with its authentication and TLS proxy switched on. Be clear that we served with vLLM directly for the hackathon. Then the models and adapters we trained on this box, and NanoInspect on top, talking to the line and to the cloud review tier.</aside>
+  <aside class="notes">How we integrated the HP product, bottom to top. The HP ZGX Nano hardware. The DGX OS stack it ships with: CUDA 13 and the driver, with GPU telemetry streamed straight into our dashboard. Both of our models are served by HP Z Runtime, zrt, HP's own serving layer on this Nano: zrt service start launches each tier with our exact vLLM settings and fine-tuned adapters, HP's model cache holds the weights, and one HTTPS proxy fronts both tiers. We verified it on 300 held-out images: same 95.3% of defects caught, 4.0% false alarms. Then the models and adapters we trained on this box, and NanoInspect on top, talking to the line and to the cloud review tier.</aside>
 </section>
 
 <!-- 15 STRESS -->
@@ -871,7 +871,7 @@ body.all #allhint{display:block}
     <div class="card" data-a style="--d:600"><div class="tag">5 · Audit everything</div><p>Every decision logs the model, the SOP id and version, and schema-validated JSON, for ISO 9001 records.</p></div>
     <div class="card" data-a style="--d:700"><div class="tag">6 · Keep the IP</div><p>Adapters are trained on the device from your photos and stay yours: no vendor model learns your product.</p></div>
   </div>
-  <p class="muted small f" style="margin-top:24px">Built into the prototype: localhost binding, optional HTTPS, crop-only escalation, API-key auth, no cloud AI, offline operation, on-device training, SOP audit trail. Recommended at deployment: egress firewall, TLS for the cloud tier, disk encryption, a retention policy for the cloud database, and the HP Z Runtime proxy.</p>
+  <p class="muted small f" style="margin-top:24px">Built into the prototype: localhost binding, optional HTTPS, crop-only escalation, API-key auth, no cloud AI, offline operation, on-device training, SOP audit trail. Recommended at deployment: egress firewall, TLS for the cloud tier, disk encryption, a retention policy for the cloud database, and HP Z Runtime’s TLS proxy (already on).</p>
   <aside class="notes">For the IT and security team, a six-step playbook. Download weights once, then air-gap the box, allowing only the review host. Run the cloud tier, a Docker image, in your own VPC. Minimise what leaves: crops only, or none for a fully local line. Harden the box: disk encryption, SSH keys, HTTPS, and HP Z Runtime's auth and TLS proxy in front of the models. Audit every decision against the SOP version. And keep the IP. Reveal the footer: we're honest about what's built versus recommended.</aside>
 </section>
 
@@ -912,7 +912,7 @@ body.all #allhint{display:block}
   <h2 data-a style="--d:100">What we’d do with another month</h2>
   <div class="g2" style="margin-top:20px;gap:40px">
     <div class="card" data-a style="--d:200"><h3>Trade-offs we measured</h3><p>• Training needs the 27B’s full-precision weights; we serve it in FP8: same accuracy, 1.8× faster (0.84 vs 0.46 parts/s)<br>• Capacity mode tops out at about 50 parts/min per Nano<br>• MVTec AD is a benchmark, not a live line</p></div>
-    <div class="card" data-a style="--d:350"><h3>Roadmap</h3><p>• Try NVFP4 for the fine-tuned 27B (FP8 already gives 1.8×)<br>• Closed loop: nightly retraining from reviewer labels, with the same keep-or-revert rule<br>• Serve through HP Z Runtime; OPC UA / MQTT to real PLCs; drift alerts<br>• Pilot with a real camera fixture; a fleet sharing a defect library, not images</p></div>
+    <div class="card" data-a style="--d:350"><h3>Roadmap</h3><p>• Try NVFP4 for the fine-tuned 27B (FP8 already gives 1.8×)<br>• Closed loop: nightly retraining from reviewer labels, with the same keep-or-revert rule<br>• OPC UA / MQTT to real PLCs; drift alerts<br>• Pilot with a real camera fixture; a fleet sharing a defect library, not images</p></div>
   </div>
   <aside class="notes">We're upfront about trade-offs. The fine-tuned 27B runs in full precision, so it's half as fast as the quantised build; quantising it is next. Capacity mode tops out around 50 parts a minute per Nano. MVTec is a benchmark, so a real-line pilot comes next. The roadmap: nightly retraining from reviewer labels, serving through HP Z Runtime, real PLC integration and drift alerts.</aside>
 </section>
