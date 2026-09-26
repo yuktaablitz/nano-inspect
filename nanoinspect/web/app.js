@@ -209,7 +209,8 @@ function tierLine(r, n) {
   if (!r) return `<span class="muted">${n === 2 ? "not needed (tier 1 was confident; accepted parts are re-checked in a random audit)" : "–"}</span>`;
   const f = r.verdict === "defective" && r.defect_type && r.defect_type !== "none" ? ` · ${esc(r.defect_type.replaceAll("_", " "))} at the ${esc(r.location)}` : "";
   return `<b>${esc(r.verdict ?? "unusable")}</b>${f} <span class="muted small">P(defect) ${pct(r.p_defective)} · ${sec(r.latency_s)}</span>` +
-    (r.explanation ? `<div class="small">“${esc(r.explanation)}”${r.explanation_by ? ` <span class="muted">(verdict: fine-tuned 27B · sentence: untrained 27B)</span>` : ""}</div>` : "");
+    (r.explanation_pending ? `<div class="small" data-expl>“${esc(r.explanation)}” <span class="muted">· decided early; writing the full explanation…</span></div>`
+     : r.explanation ? `<div class="small">“${esc(r.explanation)}”${r.explanation_by ? ` <span class="muted">(verdict: fine-tuned 27B · sentence: untrained 27B)</span>` : ""}</div>` : "");
 }
 function renderResult(r) {
   lastInspection = r.inspection_id; chatHist = []; $("#chat-log").innerHTML = "";
@@ -236,6 +237,13 @@ function renderResult(r) {
       <span class="pill ${r.decision}">${esc(r.machine_json.line_command.action)}</span> <span class="muted small">SOP ${esc(r.machine_json.sop.sop_id)} v${esc(r.machine_json.sop.version)} · report text by ${esc(r.machine_json_source)} · schema-validated</span></summary>
       <pre>${esc(JSON.stringify(r.machine_json, null, 2))}</pre></details>` : ""}`;
   $("#chat").hidden = !META?.tier2?.healthy;
+  if (r.tier2?.explanation_pending) fillExplanation(r.inspection_id);
+}
+async function fillExplanation(iid) {   // the decision is already shown; the untrained 27B's sentence arrives a few seconds later
+  const e = await api(`/api/explanation/${iid}`).catch(() => null), el = $("#result [data-expl]");
+  if (!el || lastInspection !== iid) return;
+  if (e?.explanation) el.innerHTML = `“${esc(e.explanation)}” <span class="muted">(verdict: fine-tuned 27B · sentence: untrained 27B)</span>`;
+  else el.querySelector(".muted")?.remove();
 }
 async function ask() {
   const q = $("#chat-q").value.trim(); if (!q || lastInspection == null) return;

@@ -39,6 +39,8 @@ WEB = Path(__file__).parent / "web"
 DOCS = Path(__file__).resolve().parent.parent / "docs"
 SITE = os.environ.get("NANOINSPECT_SITE", "Plant-SJ / Line 3 / QC-2")
 CLOUD_URL = os.environ.get("NANOINSPECT_CLOUD_URL", "http://127.0.0.1:9000")
+EARLY = os.environ.get("NANOINSPECT_EARLY_DECISION", "1") == "1"   # decide before tier 2 writes its explanation
+NCR_LLM = os.environ.get("NANOINSPECT_NCR_LLM", "0") == "1"   # 1 = tier 2 writes a separate NCR text (slower rejects)
 CLOUD_KEY = os.environ.get("NANOINSPECT_CLOUD_KEY", "nanoinspect-demo-key")
 SOP = {"accept": "Release the {cat} to the next station.",
        "manual_review": "Hold the {cat} until the reviewer's decision arrives.",
@@ -87,6 +89,7 @@ class State:
         self.store = EdgeStore()
         self.sync = CloudSync(self.store, CLOUD_URL, CLOUD_KEY, SITE).start()
         self.images = collections.OrderedDict()          # recent operator inspections (upload, camera, samples), for chat
+        self.explanations = collections.OrderedDict()   # inspection id -> (future, verdict) for explanations still being written
         self.line_images = collections.OrderedDict()     # simulated-line parts, kept apart so a running line never evicts the operator's part
         self.line = LineSimulator(self.t1_fn, self.t2_fn, self.policy_fn, self.t_lo, self.items, parts_per_minute=120,
                                   defect_rate=0.05, audit_rate=self.audit_rate, on_event=self.on_line_event)
@@ -189,20 +192,25 @@ class State:
     # ------------------------------------------------------------ one part through the cascade
     def cascade(self, pil, cat, source, force_t2=False, image_ref="upload", true_label=None, image_bytes=None):
         audit = random.random() < self.audit_rate
-        res = decide_part(pil, cat, t1=self.t1, t2=self.t2, refs=self.refs, check=self.check, policy_fn=self.policy_fn,
+        res = decide_part(pil, cat, t1=self.t1, t2=self.t2, refs=self.refs, check=self.check, policy_fn=self.policy_fn, early=EARLY,
                           t_lo=self.t_lo, force_t2=force_t2, audit=audit, explainer=self.writer)
         decision, tier, bucket, reason, r1, r2 = (res[k] for k in ("decision", "tier", "bucket", "reason", "r1", "r2"))
+        pending = r2.pop("_explainer_future", None) if r2 else None
         audit = audit and tier > 1 and (r1 or {}).get("p_defective", 1) < self.t_lo
         pil = pil.convert("RGB"); total = res["total_s"]; chk = res["input_check"]
         dscore, hm, dz = self.delta.score(pil, cat)
         iid, eid = self.record(source=source, cat=cat, image_ref=image_ref, decision=decision, tier=tier, bucket=bucket, reason=reason,
                                r1=r1, r2=r2, total_s=total, image_bytes=image_bytes, true_label=true_label, pil=pil, hm=hm)
+        if pending is not None:
+            self.explanations[iid] = (pending, r2.get("verdict"))
+            while len(self.explanations) > 200: self.explanations.popitem(last=False)
         r1 = r1 or {}
         src = r2 if (r2 or {}).get("verdict") == "defective" else r1
         self.act.last_usage = (0, 0)
         machine, machine_src = self.act.build(
             cat=cat, decision=decision, part_id=f"{SITE.split('/')[-1].strip()}-{iid:06d}", defect_type=src.get("defect_type"),
             location=src.get("location"), explanation=(r2 or {}).get("explanation"), pil=pil,
+            use_llm=NCR_LLM,   # off by default: the report reuses tier 2's sentence, saving a ~25 s 27B call per reject
             evidence={"tier1_p_defect": r1.get("p_defective"), "tier2_verdict": (r2 or {}).get("verdict"),
                       "delta_score": round(dscore, 3), "delta_z_vs_good": round(dz, 2), "evidence_bucket": bucket})
         marked = pil.copy(); d = ImageDraw.Draw(marked)
@@ -220,7 +228,7 @@ class State:
                 "machine_json": machine, "machine_json_source": machine_src,
                 "audit": audit, "category": cat, "t_lo": self.t_lo, "total_s": round(total, 3), "input_check": chk,
                 "tier1": pick(r1, ("verdict", "defect_type", "location", "p_defective", "latency_s", "valid")),
-                "tier2": pick(r2, ("verdict", "defect_type", "location", "explanation", "explanation_by", "p_defective", "latency_s", "valid")),
+                "tier2": pick(r2, ("verdict", "defect_type", "location", "explanation", "explanation_by", "explanation_pending", "p_defective", "latency_s", "valid")),
                 "recommended_action": SOP[decision].format(cat=cat.replace("_", " ")),
                 "image_b64": _b64(pil), "marked_b64": _b64(marked), "reference_b64": _b64(self.refs[cat], 192)}
 
@@ -316,9 +324,24 @@ DEMO_SCENARIOS = [
      "story": "Tier 1 is confident the bottle is good, so it is accepted in about 2 seconds. No big model, no person."},
     {"id": "reject", "title": "Clear defect", "expect": "reject", "category": "bottle", "path": "bottle/test/broken_large/000.png",
      "story": "Both LLM tiers see a broken rim. Rejecting is cheaper than asking a person, and the line receives a machine instruction."},
-    {"id": "review", "title": "Models disagree", "expect": "manual_review", "category": "bottle", "path": "bottle/test/contamination/009.png",
-     "story": "Tier 1 sees contamination, tier 2 does not. The disagreement goes to a person in the cloud; only a crop leaves the plant."},
+    {"id": "review", "title": "Models disagree", "expect": "manual_review", "category": "screw", "path": "screw/test/scratch_head/020.png",
+     "story": "Tier 1 flags a scratched screw head, tier 2 says good. The disagreement goes to a person in the cloud, who catches the real defect; only a crop leaves the plant."},
 ]
+
+
+@app.get("/api/explanation/{iid}")
+def explanation(iid: int):
+    """The untrained 27B's sentence for an early decision; waits until it is written. Never contradicts the decision."""
+    item = S.explanations.get(iid)
+    if not item:
+        raise HTTPException(404, "no explanation pending")
+    fut, verdict = item
+    try:
+        e = fut.result(timeout=120)
+    except Exception:
+        return {"explanation": None}
+    ok = e.get("explanation") and e.get("verdict") == verdict
+    return {"explanation": e["explanation"] if ok else None, "by": S.writer if ok else None}
 
 
 @app.get("/api/demo_scenarios")

@@ -120,24 +120,28 @@ class Tier:
         content.append({"type": "text", "text": self.prompt_fn(category)})
         return [{"role": "system", "content": SYSTEM}, {"role": "user", "content": content}]
 
-    def ask(self, images, category, model=None):
-        """images: list (length n_images) of PIL/arrays. Returns parsed answer + p_defective + timing."""
+    def ask(self, images, category, model=None, stop=None):
+        """images: list (length n_images) of PIL/arrays. Returns parsed answer + p_defective + timing.
+        stop: end generation early (e.g. before the explanation), the JSON is closed before parsing."""
         body = {"model": model or self.model, "messages": self.messages(images, category), "temperature": 0,
                 "max_tokens": self.max_tokens, "logprobs": True, "top_logprobs": 5, **self.extra}
+        if stop: body["stop"] = stop
         t0 = time.perf_counter()
         r = self.session.post(f"{self.url}/v1/chat/completions", json=body, timeout=self.timeout)
         dt = time.perf_counter() - t0
         r.raise_for_status()
         j = r.json(); ch = j["choices"][0]
         text = ch["message"].get("content") or ""
+        if stop and "}" not in text:
+            text = text.rstrip().rstrip(",") + "}"
         p = parse(text, category)
         lp = (ch.get("logprobs") or {}).get("content")
         return {**p, "p_defective": p_defective(lp, p["verdict"]), "raw": text, "latency_s": dt,
                 "prompt_tokens": j.get("usage", {}).get("prompt_tokens"), "completion_tokens": j.get("usage", {}).get("completion_tokens")}
 
-    def safe_ask(self, images, category, model=None):
+    def safe_ask(self, images, category, model=None, stop=None):
         try:
-            return self.ask(images, category, model)
+            return self.ask(images, category, model, stop)
         except Exception as exc:
             return {"verdict": None, "valid": False, "p_defective": 0.5, "raw": f"error: {exc}", "latency_s": None,
                     "defect_type": None, "location": None, "explanation": None, "error": repr(exc)}

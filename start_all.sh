@@ -7,7 +7,8 @@
 #   ./start_all.sh status        health of every component
 #   ./start_all.sh stop          stop what this script started
 #
-#   T2=nvfp4 ./start_all.sh      serve the untrained NVFP4 27B instead of the fine-tuned BF16 + LoRA (faster, less memory)
+#   Tier 2 is the fine-tuned 27B served with FP8 weights (1.8x faster than BF16, same accuracy: artifacts/results/tier2_fp8_vs_bf16.json)
+#   TIER2_QUANT= ./start_all.sh  serve it in full BF16 instead;  T2=nvfp4 ./start_all.sh  serve the untrained NVFP4 27B
 set -uo pipefail
 cd "$(dirname "$0")"
 mkdir -p artifacts/logs
@@ -45,7 +46,7 @@ urls() {
 demo() {
   local e; e=$(edge_url)
   [ -z "$e" ] && { echo "edge app is not running; start it with ./start_all.sh"; return 1; }
-  echo "Running the three demo decisions on the Nano (tier 2 calls take ~15-20 s each)..."
+  echo "Running the three demo decisions on the Nano (tier-2 decisions take ~6-10 s each)..."
   E="$e" "$PY" - <<'PYEOF'
 import json, os, ssl, sys, time, urllib.request
 E = os.environ["E"]; ctx = ssl._create_unverified_context()
@@ -79,7 +80,7 @@ if ! up http://127.0.0.1:8001/v1/models; then
   pgrep -f -- "--port 8001" >> "$PIDS" || true
 fi
 if ! up http://127.0.0.1:8002/v1/models; then
-  if [ "${T2:-ft}" = "nvfp4" ] || [ ! -f artifacts/models/vlm_lora_t2/adapter_config.json ]; then ./serve_models.sh tier2; else ./serve_models.sh tier2ft; fi \
+  if [ "${T2:-ft}" = "nvfp4" ] || [ ! -f artifacts/models/vlm_lora_t2/adapter_config.json ]; then ./serve_models.sh tier2; else TIER2_QUANT=${TIER2_QUANT-fp8} ./serve_models.sh tier2ft; fi \
     || { echo "tier 2 failed; see artifacts/logs/vllm_tier2.log"; exit 1; }
   pgrep -f -- "--port 8002" >> "$PIDS" || true
 fi

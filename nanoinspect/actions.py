@@ -167,7 +167,7 @@ class ActionBuilder:
                "probable_cause": entry["likely_causes"][0], "process_check": entry["process_check"], "rework_allowed": entry["rework_allowed"],
                "operator_instructions": [f"Place the part in the {'reject' if rule['disposition'] == 'reject' else 'hold'} bin and tag it with {defect_type.replace('_', ' ')}",
                                          entry["process_check"]]}
-        source = "sop"
+        source = "sop + tier-2 sentence" if explanation else "sop"
         if use_llm and self.t2 is not None and pil is not None and cat in self.refs:
             try:
                 r = self.t2.session.post(f"{self.t2.url}/v1/chat/completions", timeout=90, json={

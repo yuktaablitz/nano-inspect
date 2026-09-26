@@ -36,7 +36,8 @@ tier2() {
 tier2ft() {
   # Fine-tuned tier 2: BF16 base + NanoInspect LoRA (NVFP4 weights cannot carry our adapter).
   # "qwen3.8-27b" = untrained base (zero-shot baseline), "nanoinspect-27b-lora" = fine-tuned.
-  nohup vllm serve Qwen/Qwen3.8-27B --host 127.0.0.1 --port 8002 \
+  # TIER2_QUANT=fp8 quantises the BF16 weights to FP8 at load time: half the memory read per generated token, ~2x faster decode
+  nohup vllm serve Qwen/Qwen3.8-27B --host 127.0.0.1 --port 8002 ${TIER2_QUANT:+--quantization $TIER2_QUANT} \
     --served-model-name qwen3.8-27b \
     --enable-lora --lora-modules "nanoinspect-27b-lora=$PWD/artifacts/models/vlm_lora_t2" --max-lora-rank 16 \
     --kv-cache-dtype fp8 --gpu-memory-utilization ${TIER2_MEM:-0.55} --max-model-len 16384 \

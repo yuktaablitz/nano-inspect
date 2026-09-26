@@ -94,7 +94,19 @@ class InputCheck:
         return {"out_of_distribution": z > self.limit, "z": round(z, 1), "z_limit": self.limit}
 
 
-def decide_part(pil, cat, *, t1, t2, refs, check, policy_fn, t_lo, force_t2=False, audit=False, explainer=None):
+STOP_BEFORE_EXPLANATION = [', "explanation"', ',"explanation"']
+_EXPLAIN_POOL = None
+
+
+def template_sentence(r):
+    if r.get("verdict") == "good":
+        return "No defect found: differences from the known-good reference look like normal variation."
+    dt = str(r.get("defect_type") or "defect").replace("other:", "").replace("_", " ")
+    loc = str(r.get("location") or "").replace("other:", "")
+    return f"Visible {dt}" + (f" at the {loc} of the part" if loc and loc != "none" else "") + " that the reference part does not have."
+
+
+def decide_part(pil, cat, *, t1, t2, refs, check, policy_fn, t_lo, force_t2=False, audit=False, explainer=None, early=True):
     """Run one part through the cascade. Returns decision, tier reached, evidence bucket, reason, and both tiers' answers.
     Never raises: model failures fall back to escalation."""
     t0 = time.perf_counter()
@@ -113,7 +125,17 @@ def decide_part(pil, cat, *, t1, t2, refs, check, policy_fn, t_lo, force_t2=Fals
     if p1 < t_lo and not force_t2 and not audit:
         return {"decision": "accept", "tier": 1, "bucket": "fast_accept", "input_check": chk, "r1": r1, "r2": None,
                 "reason": f"tier 1 is confident the part is good (P(defect) {p1:.1%})", "total_s": time.perf_counter() - t0}
-    if explainer is not None:
+    if explainer is not None and early:
+        # Early decision: the fine-tuned tier 2 stops after verdict, defect type and location (all the decision needs),
+        # while the untrained base model (same server) writes the operator's sentence in the background.
+        global _EXPLAIN_POOL
+        from concurrent.futures import ThreadPoolExecutor
+        if _EXPLAIN_POOL is None: _EXPLAIN_POOL = ThreadPoolExecutor(4)
+        fe = _EXPLAIN_POOL.submit(t2.safe_ask, [refs[cat], pil], cat, explainer)
+        r2 = t2.safe_ask([refs[cat], pil], cat, None, STOP_BEFORE_EXPLANATION)
+        if r2.get("valid"):
+            r2 = {**r2, "explanation": template_sentence(r2), "explanation_pending": True, "_explainer_future": fe}
+    elif explainer is not None:
         # The fine-tuned tier 2 decides; the untrained base model (same server) writes the operator's sentence.
         # Both requests run at the same time, so this adds almost no waiting.
         from concurrent.futures import ThreadPoolExecutor

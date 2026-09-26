@@ -6,6 +6,25 @@ NanoInspect is an edge-first visual quality-inspection system. It runs a cascade
 
 ![architecture](docs/architecture.svg)
 
+## Hackathon deliverables
+| Deliverable | Where |
+|---|---|
+| **Public Git repository** with all source code | this repo. Model weights and the dataset are downloaded by `setup.sh`; the trained adapters are in the [`adapters-v1` release](https://github.com/yuktaablitz/nano-inspect/releases/tag/adapters-v1) |
+| **README with setup instructions** | [Quick start](#quick-start) and [Run it](#run-it-on-a-zgx-nano-dgx-spark-or-any-nvidia-gb10-machine) |
+| **How local / hybrid inference is implemented** | [How local / hybrid inference works](#how-local--hybrid-inference-works), [`docs/architecture.svg`](docs/architecture.svg) |
+| **Script to automate the prototype** | [`setup.sh`](setup.sh) installs everything; [`start_all.sh`](start_all.sh) starts the whole prototype, checks it end to end, reports status and stops it ([details](#prototype-automation-script-start_allsh)) |
+| **Interactive deck** | [`docs/presentation/NanoInspect_Presentation.html`](docs/presentation/NanoInspect_Presentation.html): 27 slides, self-contained, works offline. Download and open it in a browser; N = speaker notes, A = all slides |
+| **Demo video (≤ 2 min)** | script, live-demo runbook and an animation prompt in [`docs/DEMO_AND_VIDEO.md`](docs/DEMO_AND_VIDEO.md) |
+
+## Quick start
+```bash
+git clone https://github.com/yuktaablitz/nano-inspect.git && cd nano-inspect
+./setup.sh                    # once: Python env, packages, model weights, trained adapters (then it works offline)
+./start_all.sh --https        # start both AI tiers, the cloud review tier and the operator app; waits until ready
+./start_all.sh demo           # automated check: a good part, a defect and a disagreement, each must PASS
+```
+Then open `https://<nano-ip>:8080`.
+
 ## Who it is for, and why the cloud alone does not work
 **Target user:** the QC line supervisor at a manufacturer launching a new product, who has about one second per part to decide: ship it, scrap it, or check it again.
 - The product's images *are* its design, and the company does not want them in a vendor's cloud yet (**data residency**).
@@ -17,7 +36,7 @@ NanoInspect is an edge-first visual quality-inspection system. It runs a cascade
 | Tier | Runs on | Model | Sees |
 |---|---|---|---|
 | 1 · cheap | ZGX Nano, vLLM :8001 | **Qwen2.5-VL-7B + LoRA fine-tuned on the Nano** (0.48% of weights, 28 min, real defect photos only) | every part: verdict, defect type, location, P(defect) from token log-probabilities |
-| 2 · expensive | ZGX Nano, vLLM :8002 | **Qwen3.8-27B + LoRA fine-tuned on the Nano** (79.7M of 27.4B parameters, 0.29%, 2 h 14 min), chosen from the [vLLM recipes](https://recipes.vllm.ai) verified for DGX Spark / GB10; served as BF16 + adapter (`./serve_models.sh tier2ft`), or untrained NVFP4 (`tier2`) | parts tier 1 is unsure about, plus a 5% audit of accepts; compares with a known-good reference, explains, writes the NCR, answers operator chat |
+| 2 · expensive | ZGX Nano, vLLM :8002 | **Qwen3.8-27B + LoRA fine-tuned on the Nano** (79.7M of 27.4B parameters, 0.29%, 2 h 14 min), chosen from the [vLLM recipes](https://recipes.vllm.ai) verified for DGX Spark / GB10; served with **FP8 weights** + adapter (quantised at load: same accuracy as BF16, 1.8× faster; `artifacts/results/tier2_fp8_vs_bf16.json`), or untrained NVFP4 (`T2=nvfp4`) | parts tier 1 is unsure about, plus a 5% audit of accepts; compares with a known-good reference, explains, writes the NCR, answers operator chat |
 | 3 · cloud | any server | a human reviewer (**no AI in the cloud**) | only parts where review is cheaper than the risk |
 
 **Escalation rule (explicit, defensible, measurable).** Both tiers' answers put a part in an evidence bucket. Bayes' rule turns error rates measured on held-out parts, plus the line's defect rate, into P(defect | bucket). Then:
@@ -32,6 +51,9 @@ The rule is fitted on one half of the evaluation images and reported on the othe
 - A **SOP library** (`config/sop.json`, ISO 9001 §8.7) and **machine JSON** for the PLC / MES: divert, NCR, containment, and stop-line when a defect repeats.
 - A store-and-forward outbox: only a crop of an escalated part is sent, and it queues through outages.
 - Human labels flow back as training data.
+- **Early decision:** tier 2 stops as soon as it has written verdict, defect type and location, which is all the decision needs. The untrained 27B writes the operator's sentence in the background, and the page fills it in about 4 s later.
+- **Operator chat** with tier 2 about any inspected part, streamed word by word (first words in under a second).
+- **Your own SOP:** download the SOP in use, or upload the plant's `sop.json`. It is validated with plain-English errors, the previous version is kept in `config/sop_history/`, and it applies to the next decision.
 
 ## Baselines
 Classical ResNet-18 classifier · training-free delta · zero-shot Qwen2.5-VL-7B · zero-shot Qwen3.8-27B · a human checks every part · tier 1 alone · tier 2 alone. All are evaluated on the same 1,096 held-out MVTec AD images (15 products, 73 real defect types).
@@ -63,6 +85,18 @@ All numbers are measured on the ZGX Nano, on the same 1,096 held-out images (629
 | 27B zero-shot alone | $778 | 12.5 | 75.7 | 0 | – |
 
 **Tier-2 fine-tune decision:** the rule set before training was to keep it only if the cascade cost per 1,000 parts beat the baseline's $415.24. It came in at $411.91, so we **kept** it (`02_tier2_finetune_and_capacity.ipynb`; the baseline is tagged `pre-tier2-finetune`). The price: the adapter needs the BF16 weights, so tier 2 serves 0.46 parts/s instead of 0.95 with NVFP4, and uses 122 J per call instead of 51.
+
+**Tier 2 in FP8 vs BF16** (the same 300 held-out images, 150 defective and 150 good): defects caught 95.3% vs 95.3%, good parts flagged 5.3% vs 4.7%, ROC-AUC 0.990 vs 0.992, same verdict on 99% of images; 0.84 vs 0.46 parts/s. FP8 is the default.
+
+**Time to a decision on the Nano** (live app, `./start_all.sh demo`):
+
+| Part | Outcome | Before optimising | Now |
+|---|---|---|---|
+| Good part | accept at tier 1 | 2.8 s | **1.9 s** |
+| Clear defect | reject at tier 2 + machine instruction | 45.0 s | **6.4 s** |
+| Models disagree | human review | 19.8 s | **9.0 s** |
+
+Three changes did it: FP8 weights for tier 2 (half the memory read per generated token), the early decision, and reusing tier 2's sentence for the defect report instead of a separate 27B call.
 
 **Edge performance (fine-tuned setup):**
 
@@ -108,7 +142,7 @@ export NANOINSPECT_DATA=$HOME/Downloads/mvtec_anomaly_detection   # 2. MVTec AD 
 ./start_all.sh demo     # 4. automated end-to-end check: runs accept / reject / human-review parts and verifies each outcome
 ```
 
-**Prototype automation script (`start_all.sh`)**
+### Prototype automation script (`start_all.sh`)
 | Command | What it does |
 |---|---|
 | `./start_all.sh` | Starts every component that isn't already running, waits for each to be healthy, and prints the URLs |
@@ -116,39 +150,37 @@ export NANOINSPECT_DATA=$HOME/Downloads/mvtec_anomaly_detection   # 2. MVTec AD 
 | `./start_all.sh demo` | Runs the three demo parts through the live pipeline and prints PASS/FAIL, tier and time for each. Exits non-zero on failure, so it works in CI |
 | `./start_all.sh status` | Health of tier 1, tier 2, the cloud tier and the edge app |
 | `./start_all.sh stop` | Stops what the script started |
-| `T2=nvfp4 ./start_all.sh` | Serves the untrained NVFP4 27B instead (faster, less memory) |
+| `TIER2_QUANT= ./start_all.sh` | Serves tier 2 in full BF16 instead of FP8 |
+| `T2=nvfp4 ./start_all.sh` | Serves the untrained NVFP4 27B instead of the fine-tuned model |
 
 Example `demo` output on the ZGX Nano:
 ```
-  PASS  Good part          expected accept        got accept        at tier 1    3.6 s
-  PASS  Clear defect       expected reject        got reject        at tier 2   57.4 s
-  PASS  Models disagree    expected manual_review got manual_review at tier 3   25.6 s
+  PASS  Good part          expected accept        got accept        at tier 1    1.9 s
+  PASS  Clear defect       expected reject        got reject        at tier 2    6.4 s
+  PASS  Models disagree    expected manual_review got manual_review at tier 3    9.0 s
 All three decisions as expected.
 ```
-- The first start compiles GB10 kernels (about 10 min); later starts take 2–4 min.
-- Step by step instead: `./serve_models.sh tier1`, `./serve_models.sh tier2ft`, `./run_cloud.sh &`, `./run_edge.sh`. The cloud tier can also run elsewhere: `docker build -f cloud/Dockerfile -t nanoinspect-cloud .`, then set `NANOINSPECT_CLOUD_URL`.
+- The first start compiles GB10 kernels (about 10 min). Later, loading the models takes about 10 minutes and the operator app about 5, so start well before a demo.
+- Step by step instead: `./serve_models.sh tier1`, `TIER2_QUANT=fp8 ./serve_models.sh tier2ft`, `./run_cloud.sh &`, `./run_edge.sh --https`. The cloud tier can also run elsewhere: `docker build -f cloud/Dockerfile -t nanoinspect-cloud .`, then set `NANOINSPECT_CLOUD_URL`.
 - Reproduce every number: `jupyter nbconvert --to notebook --execute --inplace nanoinspect.ipynb`, then `02_tier2_finetune_and_capacity.ipynb`. Retrain the adapters with `python -m nanoinspect.vlm` (7B, 28 min) and `python -m nanoinspect.finetune_t2` (27B, 2 h 14 min).
 
-From a laptop, either run `./start_all.sh --https` and open `https://<nano-ip>:8080`, or tunnel with `ssh -L 8080:localhost:8080 -L 9000:localhost:9000 <user>@<nano-ip>` and open http://localhost:8080. The operator console has:
-  - inspect a part: upload a photo, take a picture with the phone or webcam, or run the three demo decisions (accept, reject, review);
-  - chat with tier 2 about any part;
-  - production line + line controller, and cloud escalations;
-  - models and live serving metrics, and the escalation policy with editable costs;
-  - API-cost savings, and **Fine-tuning & results** (before/after, loss curves, cost per 1,000 parts).
+From a laptop, either run `./start_all.sh --https` and open `https://<nano-ip>:8080`, or tunnel with `ssh -L 8080:localhost:8080 -L 9000:localhost:9000 <user>@<nano-ip>` and open http://localhost:8080.
+
+The operator app has five tabs, and every page is reachable from exactly one of them:
+
+| Tab | Pages |
+|---|---|
+| **Inspect** | upload a photo or take a picture, preview it, then **Submit for inspection**; samples and the three demo parts; chat with tier 2 about the result |
+| **Operations** | Live overview · Production line (simulator + line controller) · Human review queue · Cloud review console ↗ |
+| **Quality rules** | Escalation policy & costs · SOP & line instructions (view, download, upload) |
+| **Performance** | Accuracy & fine-tuning · Cost savings · Models & serving · Stress tests |
+| **How it works** | the pipeline, step by step |
+
 - `/pitch`: interactive pitch with live numbers.
 - **[docs/presentation/NanoInspect_Presentation.html](docs/presentation/NanoInspect_Presentation.html)**: the 20-minute interactive deck. It is self-contained and works offline: download it and open it in a browser. Press N for speaker notes and A to see all slides.
 - http://localhost:9000: the cloud review console.
 
 The trained LoRA adapters (tier 1: 149 MB, tier 2: 294 MB zipped) are too large for git. `setup.sh` downloads them from the [`adapters-v1` release](https://github.com/yuktaablitz/nano-inspect/releases/tag/adapters-v1).
-
-## Hackathon Git requirements
-| Requirement | Where |
-|---|---|
-| Public repo with all source code | this repo (weights and the dataset are downloaded by `setup.sh`) |
-| Clear README with setup steps | this file, sections above |
-| How local / hybrid inference is implemented | [How local / hybrid inference works](#how-local--hybrid-inference-works), `docs/architecture.svg` |
-| Script to automate the prototype | `setup.sh` (install) + `start_all.sh` (start everything, HTTPS option, status, **automated end-to-end demo check**, stop) |
-| Interactive deck | `docs/presentation/NanoInspect_Presentation.html` |
 
 ## Repository
 | Path | What |
@@ -167,7 +199,8 @@ The trained LoRA adapters (tier 1: 149 MB, tier 2: 294 MB zipped) are too large 
 | `setup.sh`, `start_all.sh` | Install everything; start, check (`demo`), monitor (`status`) and stop the whole prototype |
 | `docs/presentation/` | The interactive presentation (single HTML file) |
 | `serve_models.sh`, `run_edge.sh`, `run_cloud.sh` | Start one part: model tiers, edge app, cloud tier |
-| `docs/` | Architecture, Q&A for judges, demo and video script, vLLM recipe snapshot |
+| `docs/DEMO_AND_VIDEO.md` | Demo runbook, 2-minute video script, animation prompt |
+| `docs/` | Architecture diagram, Q&A for judges, vLLM recipe snapshot |
 
 ## Rules compliance
 All inference, training and fine-tuning run on the ZGX Nano with open-weight models (Qwen2.5-VL-7B-Instruct and Qwen3.8-27B / nvidia/Qwen3.8-27B-NVFP4: Apache 2.0). The cloud tier runs no AI. The offline proof blocks every outbound connection while full inspections run (notebook section 8).
