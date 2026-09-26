@@ -86,7 +86,8 @@ class State:
         self.eval_df = self._load_eval_df()
         self.store = EdgeStore()
         self.sync = CloudSync(self.store, CLOUD_URL, CLOUD_KEY, SITE).start()
-        self.images = collections.OrderedDict()          # recent inspections, for chat and ROI
+        self.images = collections.OrderedDict()          # recent operator inspections (upload, camera, samples), for chat
+        self.line_images = collections.OrderedDict()     # simulated-line parts, kept apart so a running line never evicts the operator's part
         self.line = LineSimulator(self.t1_fn, self.t2_fn, self.policy_fn, self.t_lo, self.items, parts_per_minute=120,
                                   defect_rate=0.05, audit_rate=self.audit_rate, on_event=self.on_line_event)
         self.bench = json.loads((RESULTS_DIR / "benchmark_summary.json").read_text()) if (RESULTS_DIR / "benchmark_summary.json").exists() else {}
@@ -144,8 +145,9 @@ class State:
                                 vlm_verdict=(r2 or {}).get("verdict"), vlm_type=(r2 or r1 or {}).get("defect_type"),
                                 vlm_location=loc, vision_ms=((r1 or {}).get("latency_s") or 0) * 1000,
                                 vlm_s=(r2 or {}).get("latency_s"), total_s=total_s, image_bytes=image_bytes, true_label=true_label)
-        self.images[iid] = (pil, cat);
-        while len(self.images) > 200: self.images.popitem(last=False)
+        mem = self.line_images if str(source).startswith("line") else self.images
+        mem[iid] = (pil, cat)
+        while len(mem) > (60 if mem is self.line_images else 500): mem.popitem(last=False)
         eid = None
         if tier == 3 and pil is not None:
             box = DeltaMap.peak_box(hm, *pil.size) if hm is not None else (region_box(loc, *pil.size) or (0, 0, pil.size[0], pil.size[1]))
@@ -171,6 +173,18 @@ class State:
         self.record(source="line-audit" if ev.get("audit") else "line", cat=ev["category"], image_ref=ev["path"],
                     decision=ev["decision"], tier=ev["tier"], bucket=ev.get("bucket"), reason=ev.get("reason", ""), r1=r1, r2=r2,
                     total_s=ev.get("total_s"), image_bytes=size, true_label=ev["label"], pil=pil)
+
+    def image_of(self, iid):
+        """The (image, product) of an inspection: from memory, else reloaded from the dataset path on disk."""
+        hit = self.images.get(iid) or self.line_images.get(iid)
+        if hit and hit[0] is not None:
+            return hit
+        row = self.store.inspection(iid)
+        if row and row.get("category") in CATEGORIES:
+            p = (DATA_ROOT / str(row.get("image_ref") or "")).resolve()
+            if DATA_ROOT.resolve() in p.parents and p.is_file():
+                pil = Image.open(p).convert("RGB"); self.images[iid] = (pil, row["category"]); return pil, row["category"]
+        return None
 
     # ------------------------------------------------------------ one part through the cascade
     def cascade(self, pil, cat, source, force_t2=False, image_ref="upload", true_label=None, image_bytes=None):
@@ -347,8 +361,8 @@ class ChatReq(BaseModel):
     history: list = []
 
 
-def _chat_messages(r):
-    pil, cat = S.images[r.inspection_id]
+def _chat_messages(r, found):
+    pil, cat = found
     msgs = [{"role": "system", "content": "You are NanoInspect's senior quality inspector. Answer in at most 3 short, concrete sentences, "
                                          "about the product image the operator is looking at."},
             {"role": "user", "content": [{"type": "image_url", "image_url": {"url": serving.to_data_url(S.refs[cat])}},
@@ -365,9 +379,10 @@ def _chat_messages(r):
 @app.post("/api/chat/stream")
 def chat_stream(r: ChatReq):
     """Same as /api/chat, but streams the answer as plain text so the operator sees the first words in under a second."""
-    if r.inspection_id not in S.images:
+    found = S.image_of(r.inspection_id)
+    if not found:
         raise HTTPException(404, "inspection not in memory")
-    msgs = _chat_messages(r)
+    msgs = _chat_messages(r, found)
     def gen():
         n_out = n_in = 0
         with S.t2.session.post(f"{S.t2.url}/v1/chat/completions", timeout=120, stream=True, json={
@@ -390,9 +405,10 @@ def chat_stream(r: ChatReq):
 @app.post("/api/chat")
 def chat(r: ChatReq):
     """Ask tier 2 (Qwen3.8-27B) a follow-up question about an inspected part."""
-    if r.inspection_id not in S.images:
+    found = S.image_of(r.inspection_id)
+    if not found:
         raise HTTPException(404, "inspection not in memory")
-    pil, cat = S.images[r.inspection_id]
+    pil, cat = found
     msgs = [{"role": "system", "content": "You are NanoInspect's senior quality inspector. Answer briefly and concretely, "
                                          "in at most 4 sentences, about the product image the operator is looking at."},
             {"role": "user", "content": [{"type": "image_url", "image_url": {"url": serving.to_data_url(S.refs[cat])}},

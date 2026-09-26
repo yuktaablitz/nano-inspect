@@ -97,6 +97,11 @@ class EdgeStore:
             self.db.execute("UPDATE inspections SET human_verdict=? WHERE id=(SELECT inspection_id FROM escalations WHERE id=?)", (verdict, eid))
             self.db.commit()
 
+    def inspection(self, iid):
+        with self.lock:
+            r = self.db.execute("SELECT * FROM inspections WHERE id=?", (iid,)).fetchone()
+        return dict(r) if r else None
+
     def recent(self, n=30):
         with self.lock:
             return [dict(r) for r in self.db.execute("SELECT * FROM inspections ORDER BY id DESC LIMIT ?", (n,))]
