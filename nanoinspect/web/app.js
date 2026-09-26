@@ -17,21 +17,20 @@ let META = null, view = "home", devHist = [], lastInspection = null, chatHist = 
 const thumb = (p, size = 400) => `/api/thumb?path=${encodeURIComponent(p)}&size=${size}`;
 
 // ---------------------------------------------------------------- routing: #page in the URL drives everything
-const PAGES = {
+const PAGES = {   // [title, subtitle, menu section, banner image]
   home: null,
-  overview: ["Live overview", "Every decision made on this Nano, per tier, with device telemetry and savings.", "Inspection System", "screw/test/good/002.png"],
-  inspect: ["Inspect a part", "Upload a photo or use the camera. Two local LLMs decide, explain and act.", "Inspection System", "bottle/test/broken_large/000.png"],
-  line: ["Production line", "A simulated line through the full cascade, with the line controller's instructions.", "Inspection System", "zipper/test/good/002.png"],
-  escalations: ["Cloud escalations", "Store-and-forward outbox: only crops of escalated parts leave the building.", "Inspection System", "cable/test/good/003.png"],
-  how: ["How it works", "A cheap LLM, an expensive LLM, then a human, and why each exists.", "How It Works", "hazelnut/test/crack/003.png"],
-  policy: ["Escalation policy & cost", "An explicit, measurable rule for when a person should look.", "How It Works", "metal_nut/test/good/002.png"],
-  sop: ["SOP & machine instructions", "ISO 9001 §8.7 procedures turned into instructions the line can execute.", "How It Works", "transistor/test/good/002.png"],
-  results: ["Fine-tuning & results", "What training on the Nano changed, measured against every baseline.", "Evidence", "hazelnut/test/crack/003.png"],
-  models: ["Models & serving", "Quality against baselines and serving performance, measured on the Nano.", "Evidence", "screw/test/thread_side/008.png"],
-  savings: ["Cloud vs edge savings", "Tokens, API cost, energy and time: what running locally saves.", "Evidence", "pill/test/good/002.png"],
-  evidence: ["Benchmarks", "Soak test, robustness, escalation policy and line simulation.", "Evidence", "tile/test/good/002.png"],
+  inspect: ["Inspect a part", "Upload a photo or take a picture. Two AI models on this Nano decide, explain and act.", "Inspect", "bottle/test/broken_large/000.png"],
+  overview: ["Live overview", "Every decision made on this Nano today, per tier, with device health.", "Operations", "screw/test/good/002.png"],
+  line: ["Production line", "Run the line at your speed and see the instructions sent to the machines.", "Operations", "zipper/test/good/002.png"],
+  escalations: ["Human review queue", "Parts sent to a reviewer. Only a small crop of each leaves the building.", "Operations", "cable/test/good/003.png"],
+  policy: ["Escalation policy & costs", "When a person should look, decided by your own costs.", "Quality rules", "metal_nut/test/good/002.png"],
+  sop: ["SOP & line instructions", "Your quality procedure turned into instructions the line can execute.", "Quality rules", "transistor/test/good/002.png"],
+  results: ["Accuracy & fine-tuning", "How well it catches defects, before and after training on the Nano.", "Performance", "hazelnut/test/crack/003.png"],
+  savings: ["Cost savings", "What running on the Nano saves versus a cloud AI service: money, data and time.", "Performance", "pill/test/good/002.png"],
+  models: ["Models & serving", "The two AI models, their quality against baselines, and their live speed.", "Performance", "screw/test/thread_side/008.png"],
+  evidence: ["Stress tests", "Endurance, heat, robustness, offline and failure tests on the device.", "Performance", "tile/test/good/002.png"],
+  how: ["How it works", "A cheap AI model, an expensive AI model, then a person, and why each exists.", "How it works", "hazelnut/test/crack/003.png"],
 };
-const SECTION_HOME = { "Inspection System": "overview", "How It Works": "how", "Evidence": "evidence" };
 function route() {
   const v = (location.hash.slice(1) || "home"); show(PAGES.hasOwnProperty(v) ? v : "home");
 }
@@ -45,11 +44,11 @@ function show(v) {
   if (P) {
     $("#banner-title").textContent = P[0]; $("#banner-sub").textContent = P[1];
     $("#banner-bg").style.backgroundImage = `url(${thumb(P[3], 900)})`;
-    const sec = SECTION_HOME[P[2]];
-    $("#crumbs").innerHTML = `<a href="#home">Home</a> » <a href="#${sec}">${P[2]}</a> » ${esc(P[0])}`;
+    const direct = !document.querySelector(`.mi[data-sec="${P[2]}"] .dd`);   // a tab without a dropdown is its own page
+    $("#crumbs").innerHTML = direct ? `<a href="#home">Home</a> › ${esc(P[0])}` : `<a href="#home">Home</a> › ${esc(P[2])} › ${esc(P[0])}`;
   }
   document.querySelectorAll(".mi").forEach(m => { m.classList.remove("open");
-    m.querySelector(":scope > a").classList.toggle("on", !!P && P[2] === m.querySelector(":scope > a").textContent.trim()); });
+    m.querySelector(":scope > a").classList.toggle("on", !!P && P[2] === m.dataset.sec); });
   window.scrollTo(0, 0);
   if (v === "home") home();
   if (v === "policy") loadPolicy();
@@ -173,15 +172,17 @@ drop.ondragover = e => { e.preventDefault(); drop.classList.add("over"); };
 drop.ondragleave = () => drop.classList.remove("over");
 drop.ondrop = e => { e.preventDefault(); drop.classList.remove("over"); e.dataTransfer.files[0] && stage(e.dataTransfer.files[0], "upload"); };
 let staged = null;
+const stagedMeta = () => `${(staged.f.size / 1024).toFixed(0)} KB · product: ${$("#cat").value} · not sent yet`;
+function unstage() { staged = null; $("#staged").hidden = true; $("#drop").hidden = false; }
 function stage(f, source) {
   staged = { f, source };
-  $("#pending-img").src = URL.createObjectURL(f); $("#pending-name").textContent = f.name;
-  $("#pending-meta").textContent = `${(f.size / 1024).toFixed(0)} KB · product: ${$("#cat").value} · nothing sent yet`;
-  $("#pending").hidden = false; file.value = "";
+  $("#staged-img").src = URL.createObjectURL(f); $("#staged-name").textContent = f.name; $("#staged-meta").textContent = stagedMeta();
+  $("#staged").hidden = false; $("#drop").hidden = true; $("#cam").hidden = true; file.value = "";
+  $("#staged").scrollIntoView({ behavior: "smooth", block: "center" });
 }
-$("#submit").onclick = () => { if (!staged) return; const { f, source } = staged; staged = null; $("#pending").hidden = true; inspectFile(f, source); };
-$("#clear").onclick = () => { staged = null; $("#pending").hidden = true; };
-$("#cat").onchange = () => { if (staged) $("#pending-meta").textContent = `${(staged.f.size / 1024).toFixed(0)} KB · product: ${$("#cat").value} · nothing sent yet`; };
+$("#submit").onclick = () => { if (!staged) return; const { f, source } = staged; unstage(); inspectFile(f, source); };
+$("#clear").onclick = () => { unstage(); file.click(); };
+$("#cat").onchange = () => { if (staged) $("#staged-meta").textContent = stagedMeta(); };
 async function inspectFile(f, source) {
   busy();
   const fd = new FormData(); fd.append("file", f); fd.append("category", $("#cat").value); fd.append("force_t2", $("#force").checked); fd.append("source", source);
@@ -239,13 +240,25 @@ function renderResult(r) {
 async function ask() {
   const q = $("#chat-q").value.trim(); if (!q || lastInspection == null) return;
   $("#chat-q").value = ""; chatHist.push({ role: "user", content: q });
-  $("#chat-log").innerHTML += `<div class="msg user">${esc(q)}</div><div class="msg bot" id="pending">…</div>`;
+  const log = $("#chat-log"), u = document.createElement("div"), b = document.createElement("div");
+  u.className = "msg user"; u.textContent = q; b.className = "msg bot thinking"; b.innerHTML = `<span class="dots"><i></i><i></i><i></i></span>`;
+  log.append(u, b); log.scrollTop = 1e9; $("#chat-send").disabled = true;
+  const t0 = performance.now(); let text = "", first = null;
   try {
-    const a = await post("/api/chat", { inspection_id: lastInspection, question: q, history: chatHist.slice(0, -1) });
-    chatHist.push({ role: "assistant", content: a.answer });
-    $("#pending").outerHTML = `<div class="msg bot">${esc(a.answer)}<div class="small muted">${a.latency_s} s · ${a.tokens} tokens · on the Nano</div></div>`;
-  } catch (e) { $("#pending").outerHTML = `<div class="msg bot">Tier 2 unavailable (${esc(e.message)}).</div>`; }
-  $("#chat-log").scrollTop = 1e9;
+    const r = await fetch("/api/chat/stream", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ inspection_id: lastInspection, question: q, history: chatHist.slice(0, -1) }) });
+    if (!r.ok) throw new Error(r.status === 404 ? "this inspection is no longer in memory; inspect the part again" : r.status);
+    const rd = r.body.getReader(), dec = new TextDecoder();
+    for (;;) {
+      const { value, done } = await rd.read(); if (done) break;
+      if (first == null) { first = (performance.now() - t0) / 1000; b.classList.remove("thinking"); }
+      text += dec.decode(value, { stream: true }); b.textContent = text; log.scrollTop = 1e9;
+    }
+    chatHist.push({ role: "assistant", content: text });
+    const meta = document.createElement("div"); meta.className = "small muted";
+    meta.textContent = `first words ${first?.toFixed(1)} s · complete ${((performance.now() - t0) / 1000).toFixed(1)} s · on the Nano`; b.appendChild(meta);
+  } catch (e) { b.classList.remove("thinking"); b.textContent = `Tier 2 unavailable (${e.message}).`; }
+  $("#chat-send").disabled = false; log.scrollTop = 1e9;
 }
 $("#chat-send").onclick = ask;
 $("#chat-q").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); ask(); } });
@@ -314,7 +327,6 @@ async function escalations(o) {
       <div class="b"><span>Cloud-only design: every image uploaded</span><div class="track"><div class="fill" style="width:100%"></div></div><b>${(full / 1e6).toFixed(1)} MB</b></div>
       <div class="b me"><span>NanoInspect: escalated region crops only</span><div class="track"><div class="fill" style="width:${full ? Math.max(0.5, 100 * sent / full) : 0}%"></div></div><b>${(sent / 1024).toFixed(0)} KB</b></div></div>
     <div class="muted small">Only a small crop of the region the models point at is sent, for escalated parts only. Product images and line data stay on the device.</div>`;
-  $("#cloud-link").href = (META?.cloud_url || "").replace("127.0.0.1", location.hostname);
   $("#esc-table").innerHTML = `<tr><th>Crop sent</th><th>Product</th><th>Why escalated</th><th>T1 P(defect)</th><th>Tier 2</th><th>Status</th><th>Human verdict</th><th>Size</th><th>Created</th></tr>` +
     E.items.map(i => `<tr><td><img src="/api/escalations/${i.id}/roi"></td><td><b>${esc(i.category)}</b><div class="small muted">${esc(i.source)}</div></td>
       <td>${esc(BUCKET[i.bucket] || i.bucket)}</td><td>${i.vision_score == null ? "–" : pct(i.vision_score)}</td><td>${esc(i.vlm_verdict ?? "–")}${i.vlm_type && i.vlm_type !== "none" ? ` · ${esc(i.vlm_type)}` : ""}</td>
@@ -426,9 +438,9 @@ async function home() {
   const cas = H["NanoInspect cascade"] || {}, hum = H["Human inspects every part"] || {};
   const sv1 = (BENCH.serving?.tier1 || []).reduce((m, r) => !m || r.requests_per_s > m.requests_per_s ? r : m, null);
   const sv2 = (BENCH.serving?.tier2 || []).reduce((m, r) => !m || r.requests_per_s > m.requests_per_s ? r : m, null);
-  $("#h-t1").textContent = t1.recall ? `${pct(t1.recall, 0)} of defects caught · ${sv1 ? sv1.requests_per_s + " parts/s" : ""} →` : "Learn more →";
-  $("#h-t2").textContent = t2.recall ? `ROC-AUC ${t2.roc_auc.toFixed(3)} · explains every flagged part →` : "Learn more →";
-  $("#h-t3").textContent = cas.human_reviews_per_1000 != null ? `${cas.human_reviews_per_1000.toFixed(0)} reviews per 1,000 parts instead of 1,000 →` : "Learn more →";
+  $("#h-t1").textContent = t1.recall ? `${pct(t1.recall, 0)} of defects caught · ${sv1 ? sv1.requests_per_s + " parts/s" : ""}` : "";
+  $("#h-t2").textContent = t2.recall ? `ROC-AUC ${t2.roc_auc.toFixed(3)} · explains every flagged part` : "";
+  $("#h-t3").textContent = cas.human_reviews_per_1000 != null ? `${cas.human_reviews_per_1000.toFixed(0)} reviews per 1,000 parts instead of 1,000` : "";
   const soak = BENCH.S4_combined_soak || {};
   const rows = [
     { tag: "Tier 1 · every part", img: "screw/test/thread_side/008.png", title: "Qwen2.5-VL-7B, fine-tuned on the Nano",
@@ -448,9 +460,8 @@ async function home() {
       facts: [[soak.max_temp_c ? soak.max_temp_c + " °C" : "–", "max temperature, soak"], [BENCH.S6_offline ? BENCH.S6_offline.outbound_connection_attempts : "–", "outbound connections offline"], ["$" + (89).toFixed(0), "API cost avoided / day"]], href: "#savings" },
   ];
   $("#rows").innerHTML = rows.map((r, i) => `<div class="alt ${i % 2 ? "flip" : ""}">
-      <a class="alt-img" href="${r.href}"><img src="${thumb(r.img, 900)}" alt=""><span class="tag">${r.tag}</span></a>
-      <div><h3>${r.title}</h3><p>${r.text}</p><div class="facts">${r.facts.map(([v, k]) => `<div><b>${v ?? "–"}</b><span>${k}</span></div>`).join("")}</div>
-        <a class="pill" href="${r.href}">Learn more</a></div></div>`).join("");
+      <div class="alt-img"><img src="${thumb(r.img, 900)}" alt=""><span class="tag">${r.tag}</span></div>
+      <div><h3>${r.title}</h3><p>${r.text}</p><div class="facts">${r.facts.map(([v, k]) => `<div><b>${v ?? "–"}</b><span>${k}</span></div>`).join("")}</div></div></div>`).join("");
   tick();
 }
 async function homeLive(o) {
@@ -476,8 +487,8 @@ async function how() {
     ["The line gets an instruction", "transistor/test/misplaced/002.png", "The SOP turns the verdict into a disposition, containment and a process check; tier 2 fills in the nonconformance report; schema-validated JSON goes to the PLC / MES, and repeated defects stop the line.", "#sop", "Open the SOP"],
   ];
   $("#how-rows").innerHTML = rows.map(([t, img, txt, h, b], i) => `<div class="alt ${i % 2 ? "flip" : ""}">
-      <a class="alt-img" href="${h}"><img src="${thumb(img, 900)}" alt=""><span class="tag">Step ${i + 1}</span></a>
-      <div><h3>${t}</h3><p>${txt}</p><a class="pill" href="${h}">${b}</a></div></div>`).join("");
+      <div class="alt-img"><img src="${thumb(img, 900)}" alt=""><span class="tag">Step ${i + 1}</span></div>
+      <div><h3>${t}</h3><p>${txt}</p></div></div>`).join("");
 }
 
 // ---------------------------------------------------------------- SOP explorer
@@ -485,7 +496,8 @@ let SOP = null, sopProduct = "bottle";
 async function sop(product) {
   if (!SOP) SOP = await api("/api/sop");
   if (product) sopProduct = product;
-  $("#sop-meta").textContent = `${SOP.sop_id} · version ${SOP.version} · effective ${SOP.effective} · owner: ${SOP.owner}`;
+  $("#sop-meta").textContent = `In use: ${SOP.sop_id} · version ${SOP.version}${SOP.effective ? " · effective " + SOP.effective : ""}${SOP.owner ? " · owner: " + SOP.owner : ""}`;
+  if (!SOP.products[sopProduct]) sopProduct = Object.keys(SOP.products)[0];
   $("#sop-basis").textContent = SOP.basis + " " + SOP.note;
   $("#sop-products").innerHTML = Object.keys(SOP.products).map(c => `<button class="${c === sopProduct ? "on" : ""}" data-sop="${c}">${c.replace("_", " ")}</button>`).join("");
   const P = SOP.products[sopProduct];
@@ -501,6 +513,22 @@ async function sop(product) {
   if (!msg) msg = await fetch("/results/example_machine_instruction.json").then(r => r.json()).catch(() => null);
   $("#sop-json").textContent = msg ? JSON.stringify(msg, null, 2) : "No instruction yet: inspect a defective part.";
 }
+
+$("#sop-file").onchange = async e => {
+  const f = e.target.files[0]; e.target.value = ""; if (!f) return;
+  const box = $("#sop-msg"); box.hidden = false; box.className = "sop-msg"; box.textContent = `Checking ${f.name}…`;
+  const fd = new FormData(); fd.append("file", f);
+  const r = await fetch("/api/sop", { method: "POST", body: fd }); const j = await r.json().catch(() => ({}));
+  if (!r.ok) {
+    const d = j.detail || {}; box.className = "sop-msg bad";
+    box.innerHTML = `<b>Not applied: ${esc(f.name)} has ${(d.errors || []).length} problem(s).</b> The current SOP is still in use.<ul>${(d.errors || [String(j.detail || r.status)]).map(x => `<li>${esc(x)}</li>`).join("")}</ul>`;
+    return;
+  }
+  box.className = "sop-msg good";
+  box.innerHTML = `<b>SOP ${esc(j.sop_id)} version ${esc(j.version)} is now in use</b> for every new decision: ${j.products} products, ${j.defect_types} defect types. The previous SOP was saved as <code>${esc(j.backup)}</code>.` +
+    (j.warnings.length ? `<ul>${j.warnings.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : "");
+  SOP = null; sop();
+};
 
 // ---------------------------------------------------------------- demo scenarios (modal + inspect page)
 let SCEN = [];
@@ -549,19 +577,26 @@ function pickSearch(i) { const r = SR[i]; $("#search-res").hidden = true; $("#se
 
 // ---------------------------------------------------------------- global clicks: menus, demo, re-inspect, lightbox, SOP chips
 document.querySelectorAll(".mi").forEach(m => {
-  let t; m.addEventListener("mouseenter", () => { clearTimeout(t); document.querySelectorAll(".mi").forEach(x => x !== m && x.classList.remove("open")); m.classList.add("open"); });
+  if (!m.querySelector(".dd")) return;
+  let t; m.addEventListener("mouseenter", () => { if (window.matchMedia("(max-width: 1000px)").matches) return; clearTimeout(t); document.querySelectorAll(".mi").forEach(x => x !== m && x.classList.remove("open")); m.classList.add("open"); });
   m.addEventListener("mouseleave", () => { t = setTimeout(() => m.classList.remove("open"), 180); });
 });
+document.querySelectorAll(".mi > a.tab").forEach(a => {
+  const toggle = () => { const m = a.parentElement, open = !m.classList.contains("open"); document.querySelectorAll(".mi").forEach(x => x.classList.remove("open")); m.classList.toggle("open", open); };
+  a.addEventListener("click", e => { e.preventDefault(); toggle(); });
+  a.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); } });
+});
 document.addEventListener("click", e => {
-  const el = e.target.closest("[data-src],[data-demo],#demo-open,[data-run],[data-mini],[data-open],[data-reinspect],[data-sr],[data-sop],.gallery img,.refs img,img.figure,.mega a");
+  const el = e.target.closest("[data-src],[data-demo],[data-run],[data-mini],[data-open],[data-reinspect],[data-sr],[data-sop],.gallery img,.refs img,img.figure,.dd a");
+  if (!e.target.closest(".mi")) document.querySelectorAll(".mi.open").forEach(m => m.classList.remove("open"));
   if (!el) { if (!e.target.closest(".search")) $("#search-res").hidden = true; return; }
-  if (el.matches(".mega a")) { el.closest(".mi").classList.remove("open"); return; }
+  if (el.matches(".dd a")) { el.closest(".mi").classList.remove("open"); return; }
   if (el.dataset.src) { e.preventDefault(); if (view !== "inspect") go("inspect");
     if (el.dataset.src === "upload") file.click();
     else if (window.isSecureContext) $("#cam-on").click();
     else file.click();   // plain http: the live camera is blocked, but phones open their camera app for this input (capture="environment")
     return; }
-  if (el.matches("[data-demo],#demo-open")) { e.preventDefault(); openDemo(); }
+  if (el.matches("[data-demo]")) { e.preventDefault(); openDemo(); }
   else if (el.dataset.run) runScenario(el.dataset.run, "modal");
   else if (el.dataset.mini) { if (!SCEN.length) loadScenarios().then(() => runScenario(el.dataset.mini, "page")); else runScenario(el.dataset.mini, "page"); }
   else if (el.dataset.open) { e.preventDefault(); $("#demo").hidden = true; go("inspect"); if (lastScenario) renderResult(lastScenario); }
@@ -574,9 +609,6 @@ document.addEventListener("click", e => {
 $("#demo-close").onclick = () => $("#demo").hidden = true;
 $("#burger").onclick = () => $(".nav").classList.toggle("open");
 window.addEventListener("hashchange", () => $(".nav").classList.remove("open"));
-document.querySelectorAll(".mi > a").forEach(a => a.addEventListener("click", e => {   // on touch screens, first tap opens the mega menu
-  if (window.matchMedia("(max-width: 1000px)").matches && !a.parentElement.classList.contains("open")) { e.preventDefault(); a.parentElement.classList.add("open"); }
-}));
 $("#demo").addEventListener("click", e => { if (e.target.id === "demo") $("#demo").hidden = true; });
 document.addEventListener("keydown", e => { if (e.key === "Escape") { $("#demo").hidden = true; document.querySelector(".lightbox")?.remove(); } });
 $("#drop").addEventListener("click", e => { if (!e.target.closest("a")) file.click(); });
@@ -632,7 +664,7 @@ async function results() {
   document.querySelectorAll("img[data-thumb]").forEach(i => i.src = thumb(i.dataset.thumb, 600));
   META = await api("/api/meta");
   $("#site").textContent = META.site;
-  $("#cloud-top").href = (META.cloud_url || "").replace("127.0.0.1", location.hostname);
+  $("#cloud-nav").href = (META.cloud_url || "").replace("127.0.0.1", location.hostname);
   $("#cat").innerHTML = META.categories.map(c => `<option ${c === "bottle" ? "selected" : ""}>${c}</option>`).join("");
   loadScenarios();
   route();

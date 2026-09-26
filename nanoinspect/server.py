@@ -20,7 +20,7 @@ import numpy as np
 import pandas as pd
 import uvicorn
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
-from fastapi.responses import FileResponse, Response
+from fastapi.responses import FileResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from PIL import Image, ImageDraw
 from matplotlib import cm as _cm
@@ -28,7 +28,7 @@ plt_cm = lambda x: _cm.jet(x)[..., :3]
 from pydantic import BaseModel
 
 from . import data, policy, serving, telemetry
-from .actions import ActionBuilder
+from .actions import SOP_PATH, ActionBuilder, save_sop, validate_sop
 from .delta import DeltaMap
 from .cascade import InputCheck, decide_part, eval_items
 from .config import CATEGORIES, DATA_ROOT, LOCATIONS, MODELS_DIR, RESULTS_DIR
@@ -347,6 +347,46 @@ class ChatReq(BaseModel):
     history: list = []
 
 
+def _chat_messages(r):
+    pil, cat = S.images[r.inspection_id]
+    msgs = [{"role": "system", "content": "You are NanoInspect's senior quality inspector. Answer in at most 3 short, concrete sentences, "
+                                         "about the product image the operator is looking at."},
+            {"role": "user", "content": [{"type": "image_url", "image_url": {"url": serving.to_data_url(S.refs[cat])}},
+                                         {"type": "image_url", "image_url": {"url": serving.to_data_url(pil)}},
+                                         {"type": "text", "text": f"The first image is a known-good {cat.replace('_', ' ')}; "
+                                                                  f"the second is the part being inspected. {r.question}"}]}]
+    for h in r.history[-6:]:
+        msgs.append({"role": h["role"], "content": h["content"]})
+    if r.history:
+        msgs.append({"role": "user", "content": r.question})
+    return msgs
+
+
+@app.post("/api/chat/stream")
+def chat_stream(r: ChatReq):
+    """Same as /api/chat, but streams the answer as plain text so the operator sees the first words in under a second."""
+    if r.inspection_id not in S.images:
+        raise HTTPException(404, "inspection not in memory")
+    msgs = _chat_messages(r)
+    def gen():
+        n_out = n_in = 0
+        with S.t2.session.post(f"{S.t2.url}/v1/chat/completions", timeout=120, stream=True, json={
+                "model": S.writer or S.t2.model, "messages": msgs, "temperature": 0.2, "max_tokens": 160, "stream": True,
+                "stream_options": {"include_usage": True}, "chat_template_kwargs": {"enable_thinking": False}}) as resp:
+            resp.raise_for_status()
+            for line in resp.iter_lines():
+                if not line.startswith(b"data: ") or line == b"data: [DONE]":
+                    continue
+                j = json.loads(line[6:])
+                if j.get("usage"):
+                    n_in, n_out = j["usage"].get("prompt_tokens", 0), j["usage"].get("completion_tokens", 0)
+                for c in j.get("choices", []):
+                    t = (c.get("delta") or {}).get("content")
+                    if t: yield t
+        S.extra["tokens_in"] += n_in; S.extra["tokens_out"] += n_out; S.extra["llm_calls"] += 1; S.extra["energy_j"] += S.joules["t2"]
+    return StreamingResponse(gen(), media_type="text/plain; charset=utf-8", headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+
+
 @app.post("/api/chat")
 def chat(r: ChatReq):
     """Ask tier 2 (Qwen3.8-27B) a follow-up question about an inspected part."""
@@ -396,6 +436,28 @@ def controller_reset():
 @app.get("/api/sop")
 def sop():
     return S.act.sop
+
+
+@app.get("/api/sop/download")
+def sop_download():
+    return FileResponse(SOP_PATH, media_type="application/json", filename=f"{S.act.sop['sop_id']}_v{S.act.sop['version']}.json")
+
+
+@app.post("/api/sop")
+async def sop_upload(file: UploadFile = File(...)):
+    """Replace the SOP. It is validated first; the previous SOP is kept in config/sop_history/. Applies to the next decision."""
+    try:
+        d = json.loads((await file.read()).decode("utf-8-sig"))
+    except Exception as e:
+        raise HTTPException(400, {"errors": [f"Not valid JSON: {e}"]})
+    errors, warnings = validate_sop(d, CATEGORIES)
+    if errors:
+        raise HTTPException(400, {"errors": errors, "warnings": warnings})
+    bak, d = save_sop(d)
+    S.act.sop = d; S.act.controller.stopped = None
+    n = sum(len(p["defects"]) for p in d["products"].values())
+    return {"ok": True, "sop_id": d["sop_id"], "version": d["version"], "products": len(d["products"]), "defect_types": n,
+            "warnings": warnings, "backup": bak.name}
 
 
 def _savings(tok_in, tok_out, calls, energy_j, gpu_s, image_bytes, parts, R):

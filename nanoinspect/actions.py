@@ -44,6 +44,64 @@ def load_sop():
     return json.loads(SOP_PATH.read_text())
 
 
+SEVERITIES = ("critical", "major", "minor")
+DISPOSITIONS = ("reject", "hold_for_mrb", "hold_for_review", "release")
+LINE_ACTIONS = ("pass", "divert_to_reject_bin", "divert_to_hold_bin", "stop_line")
+
+
+def validate_sop(d, known_products=()):
+    """Checks an uploaded SOP before it can drive the line. Returns (errors, warnings); only an SOP with no errors is used."""
+    err, warn = [], []
+    if not isinstance(d, dict):
+        return ["The file must contain one JSON object."], warn
+    for k in ("sop_id", "version"):
+        if not isinstance(d.get(k), str) or not d.get(k).strip():
+            err.append(f'"{k}" is required (text).')
+    disp = d.get("dispositions")
+    if not isinstance(disp, dict) or not disp:
+        err.append('"dispositions" is required: one rule per severity (critical / major / minor).'); disp = {}
+    for sev, r in disp.items():
+        if sev not in SEVERITIES: err.append(f'dispositions: unknown severity "{sev}" (use {", ".join(SEVERITIES)}).'); continue
+        if not isinstance(r, dict): err.append(f"dispositions.{sev} must be an object."); continue
+        if r.get("disposition") not in DISPOSITIONS: err.append(f"dispositions.{sev}.disposition must be one of {', '.join(DISPOSITIONS)}.")
+        if r.get("line_command") not in LINE_ACTIONS: err.append(f"dispositions.{sev}.line_command must be one of {', '.join(LINE_ACTIONS)}.")
+        c = r.get("containment")
+        if not isinstance(c, dict): err.append(f"dispositions.{sev}.containment is required."); continue
+        for k in ("stop_line_if_repeats", "window_parts", "recheck_last_n"):
+            if not isinstance(c.get(k), int) or c.get(k) < 0: err.append(f"dispositions.{sev}.containment.{k} must be a whole number >= 0.")
+        if not isinstance(c.get("notify"), list): err.append(f"dispositions.{sev}.containment.notify must be a list of roles.")
+    prods = d.get("products")
+    if not isinstance(prods, dict) or not prods:
+        err.append('"products" is required: one entry per product with its station and defect types.'); prods = {}
+    for cat, pr in prods.items():
+        if not isinstance(pr, dict) or not isinstance(pr.get("defects"), dict) or not pr["defects"]:
+            err.append(f"products.{cat} needs a non-empty \"defects\" object."); continue
+        if not isinstance(pr.get("station"), str): err.append(f"products.{cat}.station is required (text).")
+        for dt, e in pr["defects"].items():
+            where = f"products.{cat}.defects.{dt}"
+            if not isinstance(e, dict): err.append(f"{where} must be an object."); continue
+            if e.get("severity") not in disp: err.append(f"{where}.severity must be one of the severities in dispositions ({', '.join(disp) or 'none'}).")
+            if not isinstance(e.get("likely_causes"), list) or not e["likely_causes"] or not all(isinstance(x, str) for x in e["likely_causes"]):
+                err.append(f"{where}.likely_causes must be a non-empty list of text.")
+            if not isinstance(e.get("process_check"), str): err.append(f"{where}.process_check is required (text).")
+            if not isinstance(e.get("rework_allowed"), bool): err.append(f"{where}.rework_allowed must be true or false.")
+    missing = [c for c in known_products if c not in prods]
+    if missing: warn.append(f"No SOP entry for {', '.join(missing)}: defects on these products will be held for a person.")
+    return err[:25], warn
+
+
+def save_sop(d):
+    """Backs up the current SOP to config/sop_history/ and writes the new one. Returns the backup path."""
+    hist = SOP_PATH.parent / "sop_history"; hist.mkdir(exist_ok=True)
+    bak = hist / f"sop-{time.strftime('%Y%m%d-%H%M%S')}-{int(time.time() * 1000) % 1000:03d}.json"
+    bak.write_text(SOP_PATH.read_text())
+    d = {"effective": time.strftime("%Y-%m-%d"), "owner": "Quality", "basis": "", "note": "",
+         "accept": {"disposition": "release", "line_command": "pass"},
+         "manual_review": {"disposition": "hold_for_review", "line_command": "divert_to_hold_bin"}, **d}
+    SOP_PATH.write_text(json.dumps(d, indent=2))
+    return bak, d
+
+
 def ncr_prompt(cat, station, defect_type, entry, explanation):
     return (f"You are the quality engineer for the {station} station. A {cat.replace('_', ' ')} was rejected by visual "
             f"inspection. Detected defect: {defect_type.replace('_', ' ')}. Inspector note: {explanation or 'none'}.\n"

@@ -20,8 +20,7 @@
     <div class="util-links">
       <div class="search"><input id="search" placeholder="Search products, defects, pages" autocomplete="off"><span>⌕</span>
         <div class="search-res" id="search-res" hidden></div></div>
-      <a href="#savings">Savings</a><a id="cloud-top" target="_blank">Cloud console</a><a href="/pitch" target="_blank">Pitch</a>
-      <a href="https://github.com/yuktaablitz/nano-inspect" target="_blank">GitHub</a>
+      <a href="https://github.com/yuktaablitz/nano-inspect" target="_blank">GitHub ↗</a>
     </div>
   </div>
 </div>
@@ -31,36 +30,28 @@
   <div class="wrap nav-in">
     <a class="logo" href="#home"><span class="mark">N<i></i></span>NanoInspect</a>
     <nav class="menu">
-      <div class="mi" data-menu="m-insp"><a href="#overview">Inspection System</a>
-        <div class="mega" id="m-insp"><div class="mega-in">
-          <a class="mega-feature" href="#inspect"><img data-thumb="bottle/test/broken_large/000.png" alt=""><b>Inspect a part</b>
-            <span>Upload a photo or use the camera. Two local LLMs decide, explain the defect and send the line an instruction.</span></a>
-          <div class="mega-links">
-            <a href="#overview"><b>Live overview</b><span>Parts inspected, decisions per tier, savings and device telemetry, live.</span></a>
-            <a href="#line"><b>Production line</b><span>Run a simulated line at your speed and defect rate; watch queues, decisions and the line controller.</span></a>
-            <a href="#escalations"><b>Cloud escalations</b><span>The store-and-forward outbox, what leaves the building, and human verdicts coming back.</span></a>
-          </div></div></div></div>
-      <div class="mi" data-menu="m-how"><a href="#how">How It Works</a>
-        <div class="mega" id="m-how"><div class="mega-in">
-          <a class="mega-feature" href="#how"><img data-thumb="hazelnut/test/crack/003.png" alt=""><b>A cheap LLM, an expensive LLM, then a human</b>
-            <span>Every part is checked on the Nano. Only when a wrong automatic decision would cost more than a review does a person see it.</span></a>
-          <div class="mega-links">
-            <a href="#how"><b>The cascade</b><span>Tier 1 fine-tuned 7B, tier 2 27B with a known-good reference, tier 3 a human.</span></a>
-            <a href="#policy"><b>Escalation policy &amp; cost</b><span>An explicit Bayes + cost rule. Change the costs and watch the decisions change.</span></a>
-            <a href="#sop"><b>SOP &amp; machine instructions</b><span>ISO 9001 §8.7 procedures per defect type; schema-validated JSON for the PLC / MES.</span></a>
-          </div></div></div></div>
-      <div class="mi" data-menu="m-ev"><a href="#evidence">Evidence</a>
-        <div class="mega" id="m-ev"><div class="mega-in">
-          <a class="mega-feature" href="#models"><img data-thumb="screw/test/thread_side/008.png" alt=""><b>Measured on the ZGX Nano</b>
-            <span>Every model against baselines on 1,096 held-out images, served by vLLM on the device.</span></a>
-          <div class="mega-links">
-            <a href="#results"><b>Fine-tuning &amp; results</b><span>What training on the Nano changed: before vs after, baselines, cost per 1,000 parts.</span></a>
-            <a href="#models"><b>Models &amp; serving</b><span>Quality vs baselines, throughput, latency and live vLLM metrics.</span></a>
-            <a href="#savings"><b>Cloud vs edge savings</b><span>Tokens processed locally, API cost avoided, energy and time.</span></a>
-            <a href="#evidence"><b>Benchmarks</b><span>Soak test, robustness, escalation policy and line simulation charts.</span></a>
-          </div></div></div></div>
+      <div class="mi" data-sec="Inspect"><a href="#inspect">Inspect</a></div>
+      <div class="mi" data-sec="Operations"><a class="tab" tabindex="0">Operations <i class="caret">▾</i></a>
+        <div class="dd">
+          <a href="#overview"><b>Live overview</b><span>Parts inspected today, decisions per tier, device health</span></a>
+          <a href="#line"><b>Production line</b><span>Run the line and see the instructions sent to the machines</span></a>
+          <a href="#escalations"><b>Human review queue</b><span>Parts sent to a reviewer, and what left the building</span></a>
+          <a id="cloud-nav" target="_blank"><b>Cloud review console ↗</b><span>Where reviewers make the call (opens a new tab)</span></a>
+        </div></div>
+      <div class="mi" data-sec="Quality rules"><a class="tab" tabindex="0">Quality rules <i class="caret">▾</i></a>
+        <div class="dd">
+          <a href="#policy"><b>Escalation policy &amp; costs</b><span>When a person should look, set by your costs</span></a>
+          <a href="#sop"><b>SOP &amp; line instructions</b><span>Your quality procedure: view, download or upload it</span></a>
+        </div></div>
+      <div class="mi" data-sec="Performance"><a class="tab" tabindex="0">Performance <i class="caret">▾</i></a>
+        <div class="dd">
+          <a href="#results"><b>Accuracy &amp; fine-tuning</b><span>How well it catches defects, before and after training</span></a>
+          <a href="#savings"><b>Cost savings</b><span>What running on the Nano saves versus a cloud AI service</span></a>
+          <a href="#models"><b>Models &amp; serving</b><span>The two AI models and their live speed</span></a>
+          <a href="#evidence"><b>Stress tests</b><span>Heat, endurance, offline and failure tests on the device</span></a>
+        </div></div>
+      <div class="mi" data-sec="How it works"><a href="#how">How it works</a></div>
     </nav>
-    <button class="cta" id="demo-open">Run a live demo</button>
     <button class="burger" id="burger" aria-label="Menu">☰</button>
   </div>
 </header>
@@ -81,7 +72,6 @@
         <h1>Every part inspected on the line.</h1>
         <h2>Powered by local AI on the HP ZGX Nano.</h2>
         <p>Two vision-language models running on one edge device check, explain and act on every part. A person in the cloud sees only the cases where a wrong automatic call would cost more than their review. Product images never leave the building.</p>
-        <div class="row"><a class="pill outline" href="#how">Find out more</a><a class="pill" href="#inspect">Inspect a part</a><button class="pill ghost" data-demo>Watch 3 decisions</button></div>
       </div>
     </div>
     <section class="try-band"><div class="wrap try-in">
@@ -97,9 +87,9 @@
       <h2>Visual inspection. No cloud required.</h2>
       <p class="lead">A new product line has hundreds of good images, a handful of defects, and designs the company does not want in a vendor's cloud. NanoInspect learns it on the device and decides every part locally.</p>
       <div class="tiers3">
-        <a class="tcard" href="#models"><span class="tn">1</span><b>Tier 1 · cheap LLM</b><span>Qwen2.5-VL-7B + LoRA fine-tuned on the Nano checks <i>every</i> part: verdict, defect type, location.</span><em id="h-t1"></em></a>
-        <a class="tcard" href="#how"><span class="tn">2</span><b>Tier 2 · expensive LLM</b><span>Qwen3.8-27B compares doubtful parts with a known-good reference and explains what it sees.</span><em id="h-t2"></em></a>
-        <a class="tcard" href="#policy"><span class="tn">3</span><b>Tier 3 · human in the cloud</b><span>Only when review is cheaper than the risk. Only a crop is sent; labels return to retrain the edge.</span><em id="h-t3"></em></a>
+        <div class="tcard"><span class="tn">1</span><b>Tier 1 · cheap LLM</b><span>Qwen2.5-VL-7B + LoRA fine-tuned on the Nano checks <i>every</i> part: verdict, defect type, location.</span><em id="h-t1"></em></div>
+        <div class="tcard"><span class="tn">2</span><b>Tier 2 · expensive LLM</b><span>Qwen3.8-27B compares doubtful parts with a known-good reference and explains what it sees.</span><em id="h-t2"></em></div>
+        <div class="tcard"><span class="tn">3</span><b>Tier 3 · human in the cloud</b><span>Only when review is cheaper than the risk. Only a crop is sent; labels return to retrain the edge.</span><em id="h-t3"></em></div>
       </div>
     </div></section>
     <section class="stats-band"><div class="wrap stats" id="home-stats"></div></section>
@@ -109,9 +99,6 @@
       <p class="lead dk">Each tier costs more than the one before and sees fewer parts. Everything below runs live on this device.</p>
       <div id="rows"></div>
     </div></section>
-    <section class="band cta-band"><div class="wrap cta-in">
-      <div><h2>See it decide: accept, reject, human review.</h2><p>Three real parts, three outcomes, measured on the Nano.</p></div>
-      <button class="pill" data-demo>Run the live demo</button></div></section>
   </section>
 
   <!-- OVERVIEW -->
@@ -136,20 +123,20 @@
           <button class="src-tile" data-src="camera"><span class="ico">◉</span><b>Take a picture</b><span>with this device's camera</span></button>
         </div>
         <div class="drop" id="drop"><input type="file" id="file" accept="image/*" capture="environment" hidden>
-          <b>Drop a photo here</b> or <a id="browse">browse</a><div class="muted small">PNG / JPG — processed on this device</div></div>
-        <div id="pending" class="pending" hidden><img id="pending-img" alt="">
-          <div><div class="small"><b>Image added:</b> <span id="pending-name"></span></div>
-            <div class="small muted" id="pending-meta"></div>
-            <div class="row"><button class="primary" id="submit">Submit for inspection</button><button id="clear">Remove</button></div></div></div>
-        <div class="row">
-          <button id="cam-on" hidden>Use camera</button>
-          <button id="sample-good">Random good part</button>
-          <button id="sample-bad">Random defective part</button>
+          <b>Drop a photo here</b> or <a id="browse">browse</a><div class="muted small">PNG / JPG · processed on this device</div></div>
+        <div id="staged" class="staged" hidden>
+          <img id="staged-img" alt="">
+          <div class="staged-info"><b id="staged-name"></b><span class="muted small" id="staged-meta"></span></div>
+          <button class="primary big" id="submit">Submit for inspection</button>
+          <button class="linkbtn" id="clear">Choose a different image</button>
         </div>
         <div id="cam" hidden><video id="video" autoplay playsinline muted></video>
           <div class="row"><button class="primary" id="snap">Capture</button><button id="cam-off">Close camera</button></div></div>
+        <button id="cam-on" hidden>Use camera</button>
+        <h3>No photo? Try a sample</h3>
+        <div class="row"><button id="sample-good">Random good part</button><button id="sample-bad">Random defective part</button></div>
+        <div class="demo-mini"><div class="row" id="demo-mini"></div></div>
         <label class="check"><input type="checkbox" id="force"> Always ask tier 2 as well (skip the tier-1 fast accept)</label>
-        <div class="demo-mini"><b class="small">Demo scenarios</b><div class="row" id="demo-mini"></div></div>
         <p class="muted small">The models know the 15 MVTec product families as photographed in the dataset. A different product or setup is flagged for a person, not guessed.</p>
       </div>
       <div>
@@ -186,7 +173,7 @@
       <div class="card"><h3>Store-and-forward outbox</h3><div id="outbox"></div></div>
       <div class="card"><h3>What leaves the building</h3><div id="privacy"></div></div>
     </div>
-    <div class="card"><h3>Escalated cases <a class="small" id="cloud-link" target="_blank">open cloud review console ↗</a></h3>
+    <div class="card"><h3>Escalated cases</h3>
       <div class="table-wrap"><table id="esc-table"></table></div></div>
   </div></section>
 
@@ -196,18 +183,27 @@
     <div class="alt-rows" id="how-rows"></div>
     <div class="card"><h3>The escalation rule</h3>
       <div class="formula">escalate ⇔ min( P(defect | evidence) × $escaped defect , P(good | evidence) × $scrapped part ) &gt; $human review</div>
-      <p class="muted">P(defect | evidence) comes from Bayes' rule using error rates measured on held-out parts and the line's defect rate. <a href="#policy">Change the costs and see the decisions →</a></p></div>
+      <p class="muted">P(defect | evidence) comes from Bayes' rule using error rates measured on held-out parts and the line's defect rate. The costs are set under Quality rules → Escalation policy &amp; costs.</p></div>
   </div></section>
 
   <!-- SOP -->
   <section class="view page" id="v-sop" hidden><div class="wrap">
-    <div class="card"><h3>Standard operating procedure <span class="muted small" id="sop-meta"></span></h3>
+    <div class="card sop-io">
+      <div><h3>Your quality procedure (SOP)</h3><p class="muted small" id="sop-meta"></p>
+        <p class="muted small">The SOP decides what happens to a defective part: reject or hold, the likely cause to check, and when to stop the line. Upload your plant's own SOP as a <code>.json</code> file; it is checked before it is used and the previous version is kept.</p></div>
+      <div class="sop-actions">
+        <a class="pill outline dk" id="sop-dl" href="/api/sop/download" download>Download current SOP</a>
+        <label class="pill" for="sop-file">Upload SOP (.json)</label><input type="file" id="sop-file" accept=".json,application/json" hidden>
+      </div>
+      <div id="sop-msg" class="sop-msg" hidden></div>
+    </div>
+    <div class="card"><h3>Procedures by product</h3>
       <p class="muted" id="sop-basis"></p>
       <div class="chips-row" id="sop-products"></div>
       <div class="table-wrap"><table id="sop-table"></table></div></div>
     <div class="grid2">
       <div class="card"><h3>Disposition rules by severity</h3><div class="table-wrap"><table id="sop-disp"></table></div></div>
-      <div class="card"><h3>Latest machine instruction <a class="small" href="#line">see the line controller →</a></h3><pre class="json" id="sop-json"></pre></div>
+      <div class="card"><h3>Latest machine instruction</h3><pre class="json" id="sop-json"></pre></div>
     </div>
   </div></section>
 
@@ -237,7 +233,7 @@
     <div class="card"><h3>Each model before vs after, on 1,096 held-out images</h3><div class="table-wrap"><table id="res-models"></table></div>
       <p class="muted small" id="res-flips"></p></div>
     <div class="card"><h3>Whole strategies: cost per 1,000 parts</h3><div id="res-cost"></div>
-      <p class="muted small">Held-out half; $50 per escaped defect, $2 per scrapped good part, $0.50 per human review, 5% defect rate. Throughput mode is the default; capacity mode is a switch on the <a href="#policy">Policy page</a>.</p></div>
+      <p class="muted small">Held-out half; $50 per escaped defect, $2 per scrapped good part, $0.50 per human review, 5% defect rate. Throughput mode is the default; capacity mode is a switch under Quality rules → Escalation policy &amp; costs.</p></div>
     <div class="grid2">
       <div class="card"><h3>What the models say, before and after</h3><img class="figure" src="/results/llm_examples.png" alt="examples"></div>
       <div class="card"><h3>Detection and explanation quality</h3><img class="figure" src="/results/model_quality.png" alt="quality"><img class="figure" src="/results/escalation_policy.png" alt="policy"></div>
@@ -282,9 +278,7 @@
 </main>
 
 <footer class="foot"><div class="wrap foot-in">
-  <div><a class="logo" href="#home"><span class="mark">N<i></i></span>NanoInspect</a><p class="muted small" id="site">—</p></div>
-  <div class="foot-links"><a href="#inspect">Inspect a part</a><a href="#line">Production line</a><a href="#how">How it works</a><a href="#policy">Escalation policy</a>
-    <a href="#sop">SOP</a><a href="#results">Fine-tuning &amp; results</a><a href="#models">Models</a><a href="#savings">Savings</a><a href="#evidence">Benchmarks</a></div>
+  <div><span class="logo"><span class="mark">N<i></i></span>NanoInspect</span><p class="muted small" id="site">—</p></div>
   <div class="muted small">HP Edge AI SJSUHack 2026 · All inference, training and fine-tuning on one HP ZGX Nano (NVIDIA GB10).</div>
 </div></footer>
 
