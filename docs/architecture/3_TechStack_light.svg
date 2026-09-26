@@ -55,14 +55,14 @@
 <text x="86" y="626" font-size="16" font-weight="500" fill="#7a766f" text-anchor="start" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">HP software</text>
 <rect x="346" y="584" width="202.79999999999998" height="40" rx="20" fill="#0096d6" opacity="0.22" stroke="#0096d6" stroke-width="2"/>
 <text x="447.4" y="610" font-size="17" font-weight="700" fill="#141414" text-anchor="middle" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">HP Z Runtime (zrt)</text>
-<rect x="560.8" y="584" width="183.6" height="40" rx="20" fill="#0096d6" opacity="0.1" stroke="#0096d6" stroke-width="1.2"/>
-<text x="652.5999999999999" y="610" font-size="17" font-weight="500" fill="#141414" text-anchor="middle" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">vLLM 0.26 inside</text>
-<rect x="756.4" y="584" width="193.2" height="40" rx="20" fill="#0096d6" opacity="0.1" stroke="#0096d6" stroke-width="1.2"/>
-<text x="853.0" y="610" font-size="17" font-weight="500" fill="#141414" text-anchor="middle" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">HTTPS proxy :8100</text>
-<rect x="961.5999999999999" y="584" width="231.6" height="40" rx="20" fill="#0096d6" opacity="0.1" stroke="#0096d6" stroke-width="1.2"/>
-<text x="1077.3999999999999" y="610" font-size="17" font-weight="500" fill="#141414" text-anchor="middle" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">OpenAI-compatible API</text>
-<rect x="1205.1999999999998" y="584" width="164.4" height="40" rx="20" fill="#0096d6" opacity="0.1" stroke="#0096d6" stroke-width="1.2"/>
-<text x="1287.3999999999999" y="610" font-size="17" font-weight="500" fill="#141414" text-anchor="middle" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">HP model cache</text>
+<rect x="560.8" y="584" width="193.2" height="40" rx="20" fill="#0096d6" opacity="0.1" stroke="#0096d6" stroke-width="1.2"/>
+<text x="657.4" y="610" font-size="17" font-weight="500" fill="#141414" text-anchor="middle" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">engine: vLLM 0.26</text>
+<rect x="766.0" y="584" width="193.2" height="40" rx="20" fill="#0096d6" opacity="0.1" stroke="#0096d6" stroke-width="1.2"/>
+<text x="862.6" y="610" font-size="17" font-weight="500" fill="#141414" text-anchor="middle" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">HTTPS proxy :8100</text>
+<rect x="971.2" y="584" width="231.6" height="40" rx="20" fill="#0096d6" opacity="0.1" stroke="#0096d6" stroke-width="1.2"/>
+<text x="1087.0" y="610" font-size="17" font-weight="500" fill="#141414" text-anchor="middle" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">OpenAI-compatible API</text>
+<rect x="1214.8" y="584" width="164.4" height="40" rx="20" fill="#0096d6" opacity="0.1" stroke="#0096d6" stroke-width="1.2"/>
+<text x="1297.0" y="610" font-size="17" font-weight="500" fill="#141414" text-anchor="middle" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">HP model cache</text>
 <rect x="56" y="660" width="1364" height="92" rx="14" fill="#f7f6f3" stroke="#d6d2ca"/>
 <rect x="56" y="660" width="10" height="92" rx="5" fill="#d9391f"/>
 <text x="86" y="702" font-size="22" font-weight="800" fill="#141414" text-anchor="start" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif">Training</text>

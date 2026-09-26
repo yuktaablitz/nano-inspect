@@ -4,14 +4,16 @@
 
 NanoInspect is an edge-first visual quality-inspection system. It runs a cascade of **two locally served vision-language models** on one **HP ZGX Nano** (NVIDIA GB10), fine-tunes the cheaper one on the device, and escalates to a human in the cloud only when a cost rule says a review is worth it. When a part is rejected, it sends a machine-readable, SOP-grounded instruction to the line. HP Edge AI SJSUHack, September 2026.
 
-![architecture](docs/architecture.svg)
+![NanoInspect architecture](docs/architecture/1_Architecture_light.png)
+
+More diagrams in [`docs/architecture/`](docs/architecture/): [detailed architecture](docs/architecture/2_Architecture_Detailed_light.png) · [tech stack](docs/architecture/3_TechStack_light.png) · [serving: before vs. now](docs/architecture/4_Serving_Before_vs_Now_light.png) (dark versions and editable SVGs alongside).
 
 ## Hackathon deliverables
 | Deliverable | Where |
 |---|---|
 | **Public Git repository** with all source code | this repo. Model weights and the dataset are downloaded by `setup.sh`; the trained adapters are in the [`adapters-v1` release](https://github.com/yuktaablitz/nano-inspect/releases/tag/adapters-v1) |
 | **README with setup instructions** | [Quick start](#quick-start) and [Run it](#run-it-on-a-zgx-nano-dgx-spark-or-any-nvidia-gb10-machine) |
-| **How local / hybrid inference is implemented** | [How local / hybrid inference works](#how-local--hybrid-inference-works), [`docs/architecture.svg`](docs/architecture.svg) |
+| **How local / hybrid inference is implemented** | [How local / hybrid inference works](#how-local--hybrid-inference-works), [`docs/architecture/`](docs/architecture/) |
 | **Script to automate the prototype** | [`setup.sh`](setup.sh) installs everything; [`start_all.sh`](start_all.sh) starts the whole prototype, checks it end to end, reports status and stops it ([details](#prototype-automation-script-start_allsh)) |
 | **Interactive deck** | [`docs/presentation/NanoInspect_Presentation.html`](docs/presentation/NanoInspect_Presentation.html): 27 slides, self-contained, works offline. Download and open it in a browser; N = speaker notes, A = all slides |
 | **Demo video (≤ 2 min)** | script, live-demo runbook and an animation prompt in [`docs/DEMO_AND_VIDEO.md`](docs/DEMO_AND_VIDEO.md) |
